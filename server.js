@@ -2,52 +2,50 @@
 const express = require("express");
 const WebSocket = require("ws");
 const { createClient } = require("@supabase/supabase-js");
-
-
-
 const path = require("path");
 
+// Initialize Express
 const app = express();
-
-// Display Digital TATSAT CRM login page
-app.get("/login", (req, res) => {
-  res.sendFile(path.join(__dirname, "login.html"));
-});
- res.sendFile(path.join(__dirname, "login.html"));
-});
-
 
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.send(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Digital TATSAT CRM</title>
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-    </head>
+// =====================================
+// DIGITAL TATSAT CRM HOMEPAGE
+// =====================================
 
-    <body style="
-      margin:0;
-      font-family:Arial,sans-serif;
-      background:#071426;
-      color:white;
-      height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      text-align:center;
-    ">
-      <div>
-        <h1>Digital TATSAT CRM</h1>
-        <h2>CRM Server is Running Successfully ✅</h2>
-        <p>Sales • Leads • Calling • Follow-ups • Pipeline</p>
-      </div>
-    </body>
-    </html>
-  `);
+app.get("/", (req, res) => {
+  res.redirect("/login");
 });
+
+// =====================================
+// PREMIUM CRM LOGIN PAGE
+// =====================================
+
+app.get("/login", (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  res.sendFile(
+    path.join(__dirname, "login.html"),
+    (error) => {
+      if (error) {
+        console.error(
+          "Login page error:",
+          error.message
+        );
+
+        if (!res.headersSent) {
+          res.status(500).send(
+            "Login page unavailable. Check login.html deployment."
+          );
+        }
+      }
+    }
+  );
+});
+
+// =====================================
+// SERVER HEALTH CHECK
+// =====================================
 
 app.get("/health", (req, res) => {
   res.json({
@@ -56,7 +54,10 @@ app.get("/health", (req, res) => {
   });
 });
 
-// Supabase connectivity test — no customer records returned
+// =====================================
+// SUPABASE CONNECTION CHECK
+// =====================================
+
 app.get("/db-health", async (req, res) => {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_ANON_KEY;
@@ -68,13 +69,15 @@ app.get("/db-health", async (req, res) => {
   }
 
   try {
-    
-const supabase = createClient(url, key, {
-  realtime: {
-    transport: WebSocket
-  }
-});
-
+    const supabase = createClient(url, key, {
+      realtime: {
+        transport: WebSocket
+      },
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
 
     const { error } = await supabase
       .from("LEADS 1")
@@ -82,7 +85,11 @@ const supabase = createClient(url, key, {
       .limit(1);
 
     if (error) {
-      console.error("Supabase connectivity check failed:", error.code);
+      console.error(
+        "Supabase connectivity check failed:",
+        error.code
+      );
+
       return res.status(503).json({
         database: "connection_or_permission_error"
       });
@@ -94,7 +101,10 @@ const supabase = createClient(url, key, {
     });
 
   } catch (error) {
-    console.error("Supabase connectivity exception:", error.message);
+    console.error(
+      "Supabase connectivity exception:",
+      error.message
+    );
 
     return res.status(503).json({
       database: "connection_error"
@@ -102,8 +112,14 @@ const supabase = createClient(url, key, {
   }
 });
 
+// =====================================
+// START DIGITAL TATSAT CRM SERVER
+// =====================================
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`Digital TATSAT CRM running on port ${PORT}`);
+  console.log(
+    `Digital TATSAT CRM running on port ${PORT}`
+  );
 });
