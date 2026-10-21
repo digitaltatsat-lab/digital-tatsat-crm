@@ -1,6 +1,8 @@
 
 const express = require("express");
+const WebSocket = require("ws");
 const { createClient } = require("@supabase/supabase-js");
+
 
 const app = express();
 
@@ -55,7 +57,13 @@ app.get("/db-health", async (req, res) => {
   }
 
   try {
-    const supabase = createClient(url, key);
+    
+const supabase = createClient(url, key, {
+  realtime: {
+    transport: WebSocket
+  }
+});
+
 
     const { error } = await supabase
       .from("LEADS 1")
