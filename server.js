@@ -1,4 +1,6 @@
+
 const express = require("express");
+const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
 
@@ -24,17 +26,11 @@ app.get("/", (req, res) => {
       justify-content:center;
       text-align:center;
     ">
-
       <div>
         <h1>Digital TATSAT CRM</h1>
-
         <h2>CRM Server is Running Successfully ✅</h2>
-
-        <p>
-          Sales • Leads • Calling • Follow-ups • Pipeline
-        </p>
+        <p>Sales • Leads • Calling • Follow-ups • Pipeline</p>
       </div>
-
     </body>
     </html>
   `);
@@ -45,6 +41,46 @@ app.get("/health", (req, res) => {
     status: "ok",
     application: "Digital TATSAT CRM"
   });
+});
+
+// Supabase connectivity test — no customer records returned
+app.get("/db-health", async (req, res) => {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_ANON_KEY;
+
+  if (!url || !key) {
+    return res.status(503).json({
+      database: "configuration_missing"
+    });
+  }
+
+  try {
+    const supabase = createClient(url, key);
+
+    const { error } = await supabase
+      .from("LEADS 1")
+      .select("id", { head: true })
+      .limit(1);
+
+    if (error) {
+      console.error("Supabase connectivity check failed:", error.code);
+      return res.status(503).json({
+        database: "connection_or_permission_error"
+      });
+    }
+
+    return res.json({
+      database: "supabase_api_reachable",
+      note: "Lead access not yet verified"
+    });
+
+  } catch (error) {
+    console.error("Supabase connectivity exception:", error.message);
+
+    return res.status(503).json({
+      database: "connection_error"
+    });
+  }
 });
 
 const PORT = process.env.PORT || 3000;
