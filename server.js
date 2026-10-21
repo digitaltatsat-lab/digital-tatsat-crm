@@ -7,9 +7,13 @@ const { createClient } = require("@supabase/supabase-js");
 
 const path = require("path");
 
+const app = express();
+
 // Display Digital TATSAT CRM login page
 app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "login.html"));
+});
+ res.sendFile(path.join(__dirname, "login.html"));
 });
 
 
