@@ -4,7 +4,14 @@ const WebSocket = require("ws");
 const { createClient } = require("@supabase/supabase-js");
 
 
-const app = express();
+
+const path = require("path");
+
+// Display Digital TATSAT CRM login page
+app.get("/login", (req, res) => {
+  res.sendFile(path.join(__dirname, "login.html"));
+});
+
 
 app.use(express.json());
 
