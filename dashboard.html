@@ -3,8 +3,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Digital TATSAT | CRM</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Digital TATSAT | CRM V3</title>
+
 <style>
 :root {
   --navy:#0c203d;
@@ -13,29 +14,25 @@
   --border:#e3eaf4;
   --muted:#72839b;
 }
-* { box-sizing:border-box; }
+* {box-sizing:border-box}
 body {
   margin:0;
   font-family:Arial,sans-serif;
-  color:#172d49;
   background:var(--light);
-  background-image:
-    linear-gradient(#193d6808 1px,transparent 1px),
-    linear-gradient(90deg,#193d6808 1px,transparent 1px);
-  background-size:28px 28px;
+  color:#172d49;
 }
-button,input,select { font:inherit; }
-button { cursor:pointer; }
+button,input,select,textarea {font:inherit}
+button {cursor:pointer}
 .sidebar {
-  width:245px;
   position:fixed;
   inset:0 auto 0 0;
+  width:245px;
   padding:28px 18px;
   background:linear-gradient(160deg,#08182d,#183b67);
   color:white;
 }
-.brand { font-size:22px;font-weight:800; }
-.brand span { color:#78acff; }
+.brand {font-size:22px;font-weight:800}
+.brand span {color:#78acff}
 .tagline {
   font-size:10px;
   letter-spacing:2px;
@@ -53,7 +50,7 @@ button { cursor:pointer; }
   color:#c5d3e6;
 }
 .nav.active,.nav:hover {
-  background:#3478ff;
+  background:var(--blue);
   color:white;
 }
 .logout {
@@ -75,17 +72,17 @@ button { cursor:pointer; }
   padding:30px;
   min-height:100vh;
 }
-.topbar {
+.topbar,.flex {
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:15px;
+  gap:12px;
   flex-wrap:wrap;
-  margin-bottom:25px;
 }
-h1 { margin:8px 0;font-size:29px; }
-h2 { margin:0 0 10px;font-size:20px; }
-.sub { color:var(--muted);font-size:13px; }
+.topbar {margin-bottom:25px}
+h1 {margin:8px 0;font-size:29px}
+h2 {margin:0 0 10px;font-size:20px}
+.sub {color:var(--muted);font-size:13px}
 .admin {
   background:white;
   border:1px solid var(--border);
@@ -101,7 +98,7 @@ h2 { margin:0 0 10px;font-size:20px; }
   color:white;
   margin-bottom:24px;
 }
-.hero p { color:#c6d9f2;font-size:13px; }
+.hero p {color:#c6d9f2;font-size:13px}
 .stats {
   display:grid;
   grid-template-columns:repeat(4,1fr);
@@ -117,23 +114,13 @@ h2 { margin:0 0 10px;font-size:20px; }
   padding:22px;
   border-top:4px solid var(--blue);
 }
-.stat small { color:var(--muted); }
+.stat small {color:var(--muted)}
 .number {
   font-size:34px;
   font-weight:800;
   margin-top:14px;
 }
-.panel {
-  padding:24px;
-  margin-bottom:20px;
-}
-.flex {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  flex-wrap:wrap;
-}
+.panel {padding:24px;margin-bottom:20px}
 .actions {
   display:flex;
   gap:9px;
@@ -148,9 +135,9 @@ h2 { margin:0 0 10px;font-size:20px; }
   background:var(--navy);
   color:white;
 }
-.btn.blue { background:var(--blue); }
-.btn.light { background:#eaf1ff;color:#285dc0; }
-.btn:disabled { opacity:.5;cursor:wait; }
+.btn.blue {background:var(--blue)}
+.btn.light {background:#eaf1ff;color:#285dc0}
+.btn:disabled {opacity:.5;cursor:wait}
 .input {
   border:1px solid var(--border);
   border-radius:10px;
@@ -160,15 +147,15 @@ h2 { margin:0 0 10px;font-size:20px; }
   max-width:100%;
   outline:none;
 }
-.input:focus { border-color:var(--blue); }
+.input:focus {border-color:var(--blue)}
 .filters {
   display:flex;
   gap:10px;
   flex-wrap:wrap;
   margin:20px 0;
 }
-.tablewrap { overflow-x:auto; }
-table { width:100%;border-collapse:collapse; }
+.tablewrap {overflow-x:auto}
+table {width:100%;border-collapse:collapse}
 th {
   background:#f5f8fd;
   color:var(--muted);
@@ -190,18 +177,17 @@ td {
   color:#245fc8;
   font-size:11px;
 }
-.badge.warning {
-  background:#fff3db;
-  color:#996100;
-}
+.badge.warning {background:#fff3db;color:#996100}
+.badge.green {background:#e5f8ec;color:#13733d}
+.badge.red {background:#ffebeb;color:#a72828}
 .pagecard {
   border:1px solid var(--border);
   border-radius:14px;
   padding:18px;
   margin-top:12px;
 }
-.pagecard p { color:var(--muted);font-size:12px; }
-.hidden { display:none!important; }
+.pagecard p {color:var(--muted);font-size:12px}
+.hidden {display:none!important}
 .modal {
   display:none;
   position:fixed;
@@ -212,11 +198,11 @@ td {
   justify-content:center;
   padding:16px;
 }
-.modal.open { display:flex; }
+.modal.open {display:flex}
 .modalbox {
   background:white;
   width:100%;
-  max-width:590px;
+  max-width:690px;
   max-height:92vh;
   overflow:auto;
   border-radius:20px;
@@ -235,37 +221,56 @@ td {
   grid-template-columns:1fr 1fr;
   gap:15px;
 }
-.field { margin:0 0 15px; }
+.field {margin:0 0 15px}
 .field label {
   display:block;
   margin-bottom:7px;
   font-size:12px;
   font-weight:bold;
 }
-.field .input { width:100%; }
+.field .input {width:100%}
+.field textarea {
+  width:100%;
+  min-height:100px;
+  resize:vertical;
+}
 .message {
   white-space:pre-wrap;
   font-size:12px;
   line-height:1.7;
   margin:12px 0;
 }
-.error { color:#b42318; }
-.success { color:#13834a; }
+.error {color:#b42318}
+.success {color:#13834a}
 .empty {
   text-align:center;
   padding:35px;
   color:var(--muted);
 }
+.followup {
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  margin:15px 0;
+}
+.followbox {
+  background:#edf4ff;
+  color:#163e7c;
+  padding:12px 18px;
+  border-radius:12px;
+  font-size:12px;
+  font-weight:bold;
+}
 @media(max-width:1100px) {
-  .stats { grid-template-columns:repeat(2,1fr); }
+  .stats {grid-template-columns:repeat(2,1fr)}
 }
 @media(max-width:750px) {
-  .sidebar { position:relative;width:100%;padding:18px; }
-  .tagline { margin-bottom:15px; }
-  .nav { width:auto; }
-  .logout { position:static; }
-  .main { margin:0;padding:16px; }
-  .grid2 { grid-template-columns:1fr; }
+  .sidebar {position:relative;width:100%;padding:18px}
+  .tagline {margin-bottom:15px}
+  .nav {width:auto}
+  .logout {position:static}
+  .main {margin:0;padding:16px}
+  .grid2 {grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -300,8 +305,8 @@ td {
         DIGITAL TATSAT WORKSPACE
       </small>
       <h1 id="pageTitle">Sales Overview</h1>
-      <div class="sub" id="pageSubtitle">
-        Monitor your sales and enquiries.
+      <div class="sub">
+        Digital TATSAT Sales Intelligence CRM
       </div>
     </div>
     <div class="admin">DT Administrator</div>
@@ -311,7 +316,7 @@ td {
   <section id="dashboardSection">
     <div class="hero">
       <h2>Welcome to your command center.</h2>
-      <p>Manage leads from advertising, websites and calls.</p>
+      <p>Manage leads, calls and follow-ups in one place.</p>
       <small id="connection">Connecting...</small>
     </div>
 
@@ -338,14 +343,14 @@ td {
       <div class="flex">
         <div>
           <h2>Lead Management</h2>
-          <p class="sub">Quick access to customer enquiries.</p>
+          <p class="sub">Quick access to enquiries and follow-ups.</p>
         </div>
         <button class="btn blue" onclick="openAdd()">
           + Add New Lead
         </button>
       </div>
       <p class="sub" id="dashboardLeadSummary">
-        Loading lead summary...
+        Loading...
       </p>
       <button class="btn light" onclick="switchTab('leads')">
         View All Leads
@@ -358,8 +363,10 @@ td {
     <div class="panel">
       <div class="flex">
         <div>
-          <h2>Lead Management</h2>
-          <p class="sub">Manage manual and advertising leads.</p>
+          <h2>Lead Management V3</h2>
+          <p class="sub">
+            Customer enquiries, assignments and follow-ups.
+          </p>
         </div>
         <div class="actions">
           <button class="btn blue" onclick="openAdd()">
@@ -371,6 +378,17 @@ td {
           <button class="btn" onclick="loadLeads()">
             Refresh
           </button>
+        </div>
+      </div>
+
+      <div class="followup">
+        <div class="followbox">
+          Pending Follow-ups:
+          <span id="pendingCount">0</span>
+        </div>
+        <div class="followbox">
+          Due / Overdue:
+          <span id="dueCount">0</span>
         </div>
       </div>
 
@@ -393,7 +411,7 @@ td {
           <option>Other</option>
         </select>
 
-        <select id="clientFilter" class="input"
+        <select id="campaignFilter" class="input"
           onchange="renderLeads()">
           <option value="">All Campaigns / Forms</option>
         </select>
@@ -405,16 +423,22 @@ td {
             <tr>
               <th>ID</th>
               <th>Name</th>
+              <th>Company</th>
               <th>Phone</th>
               <th>Email</th>
               <th>Source</th>
               <th>Campaign / Form</th>
+              <th>Assigned To</th>
               <th>Status</th>
+              <th>Next Follow-up</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody id="leadsBody">
             <tr>
-              <td colspan="7" class="empty">Loading...</td>
+              <td colspan="11" class="empty">
+                Loading leads...
+              </td>
             </tr>
           </tbody>
         </table>
@@ -427,7 +451,9 @@ td {
     <div class="flex" style="margin-bottom:20px">
       <div>
         <h2>Meta Ads Manager</h2>
-        <p class="sub">Facebook and Instagram lead integration.</p>
+        <p class="sub">
+          Facebook and Instagram lead integration.
+        </p>
       </div>
       <span class="badge warning">
         Automatic Sync Not Connected
@@ -460,11 +486,10 @@ td {
         <div>
           <h2>Facebook Page Management</h2>
           <p class="sub">
-            Manage your own and client Facebook Pages.
+            Manage Digital TATSAT and client Pages.
           </p>
         </div>
-        <button class="btn blue"
-          onclick="showSetup()">
+        <button class="btn blue" onclick="showSetup()">
           + Connect Facebook Page
         </button>
       </div>
@@ -483,7 +508,7 @@ td {
           <span class="badge warning">Setup Required</span>
         </div>
         <p>
-          Client Pages will be listed here after secure
+          Client Pages will appear after secure
           multi-client authorization is implemented.
         </p>
       </div>
@@ -494,10 +519,11 @@ td {
         <div>
           <h2>Meta Lead Forms</h2>
           <p class="sub">
-            Track Meta Instant Form enquiries.
+            Track imported Facebook and Instagram leads.
           </p>
         </div>
-        <button class="btn light" onclick="openImport('Meta Ads')">
+        <button class="btn light"
+          onclick="openImport('Meta Ads')">
           Import Meta CSV
         </button>
       </div>
@@ -520,18 +546,6 @@ td {
         </table>
       </div>
     </div>
-
-    <div class="panel">
-      <h2>Automatic Lead Capture</h2>
-      <p class="sub">
-        Facebook / Instagram Instant Form →
-        Meta Webhook → Supabase → CRM Lead Management.
-      </p>
-      <p class="sub">
-        This requires Meta app permissions, Page authorization,
-        webhook verification and secure backend token storage.
-      </p>
-    </div>
   </section>
 
   <!-- SETTINGS -->
@@ -539,25 +553,23 @@ td {
     <div class="panel">
       <h2>CRM Settings</h2>
       <p class="sub">
-        Digital TATSAT CRM administrator workspace.
+        Digital TATSAT administrator workspace.
       </p>
       <p class="sub">
-        Meta integration credentials must be configured
-        securely on the server, never in this HTML file.
+        Meta credentials must be configured securely
+        in the backend, not in this HTML file.
       </p>
     </div>
   </section>
 </main>
 
-<!-- ADD LEAD POPUP -->
-<div class="modal" id="addModal"
-  role="dialog" aria-modal="true"
-  aria-labelledby="addTitle">
+<!-- ADD LEAD MODAL -->
+<div class="modal" id="addModal">
   <div class="modalbox">
-    <div class="flex" style="margin-bottom:22px">
-      <h2 id="addTitle">Add New Lead</h2>
-      <button class="close" onclick="closeModal('addModal')"
-        aria-label="Close">×</button>
+    <div class="flex" style="margin-bottom:20px">
+      <h2>Add New Lead</h2>
+      <button class="close"
+        onclick="closeModal('addModal')">×</button>
     </div>
 
     <form id="leadForm">
@@ -565,28 +577,25 @@ td {
         <div class="field">
           <label>Name *</label>
           <input class="input" id="leadName"
-            placeholder="Customer name"
             maxlength="150" required>
         </div>
 
         <div class="field">
           <label>Company</label>
           <input class="input" id="company"
-            placeholder="Company name">
+            maxlength="200">
         </div>
 
         <div class="field">
           <label>Phone</label>
           <input class="input" id="phone"
-            type="tel" maxlength="20"
-            placeholder="Mobile number">
+            maxlength="20">
         </div>
 
         <div class="field">
           <label>Email</label>
           <input class="input" id="email"
-            type="email" maxlength="254"
-            placeholder="Email address">
+            type="email" maxlength="254">
         </div>
 
         <div class="field">
@@ -624,21 +633,26 @@ td {
         </div>
 
         <div class="field">
-          <label>Lead Form / Campaign</label>
+          <label>Campaign / Form</label>
           <input class="input" id="campaign"
-            maxlength="150"
-            placeholder="Campaign or form name">
+            maxlength="150">
+        </div>
+
+        <div class="field">
+          <label>Next Follow-up</label>
+          <input class="input" id="followUp"
+            type="date">
         </div>
       </div>
 
-      <p class="sub">
-        Enter at least one contact method: phone or email.
-        Company, assignment and custom status need the
-        next backend update to be saved.
-      </p>
+      <div class="field">
+        <label>Call Remarks</label>
+        <textarea class="input" id="remarks"
+          maxlength="3000"
+          placeholder="Enter call notes..."></textarea>
+      </div>
 
-      <div id="addMessage" class="message"
-        role="status"></div>
+      <div id="addMessage" class="message"></div>
 
       <div class="flex" style="justify-content:flex-end">
         <button type="button" class="btn light"
@@ -657,22 +671,123 @@ td {
   </div>
 </div>
 
-<!-- CSV IMPORT POPUP -->
-<div class="modal" id="importModal"
-  role="dialog" aria-modal="true"
-  aria-labelledby="importTitle">
+<!-- EDIT LEAD MODAL -->
+<div class="modal" id="editModal">
   <div class="modalbox">
     <div class="flex" style="margin-bottom:20px">
-      <h2 id="importTitle">Import CSV Leads</h2>
+      <h2>Edit Lead</h2>
       <button class="close"
-        onclick="closeModal('importModal')"
-        aria-label="Close">×</button>
+        onclick="closeModal('editModal')">×</button>
+    </div>
+
+    <form id="editForm">
+      <input type="hidden" id="editId">
+
+      <div class="grid2">
+        <div class="field">
+          <label>Name *</label>
+          <input class="input" id="editName"
+            maxlength="150" required>
+        </div>
+
+        <div class="field">
+          <label>Company</label>
+          <input class="input" id="editCompany"
+            maxlength="200">
+        </div>
+
+        <div class="field">
+          <label>Phone</label>
+          <input class="input" id="editPhone"
+            maxlength="20">
+        </div>
+
+        <div class="field">
+          <label>Email</label>
+          <input class="input" id="editEmail"
+            type="email" maxlength="254">
+        </div>
+
+        <div class="field">
+          <label>Assigned To</label>
+          <select class="input" id="editAssigned">
+            <option value="">Unassigned</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Status</label>
+          <select class="input" id="editStatus">
+            <option>New</option>
+            <option>In Progress</option>
+            <option>Follow-up</option>
+            <option>Converted</option>
+            <option>Lost</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Source</label>
+          <select class="input" id="editSource">
+            <option>Manual</option>
+            <option>Meta Ads</option>
+            <option>Google Ads</option>
+            <option>Website</option>
+            <option>WhatsApp</option>
+            <option>Google Business Profile</option>
+            <option>Referral</option>
+            <option>Cold Calling</option>
+            <option>Other</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Next Follow-up</label>
+          <input class="input" id="editFollowUp"
+            type="date">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Campaign / Form</label>
+        <input class="input" id="editCampaign"
+          maxlength="150">
+      </div>
+
+      <div class="field">
+        <label>Call Remarks</label>
+        <textarea class="input" id="editRemarks"
+          maxlength="3000"></textarea>
+      </div>
+
+      <div id="editMessage" class="message"></div>
+
+      <div class="flex" style="justify-content:flex-end">
+        <button type="button" class="btn light"
+          onclick="closeModal('editModal')">
+          Cancel
+        </button>
+        <button type="submit" class="btn blue"
+          id="editSaveBtn">
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- CSV IMPORT MODAL -->
+<div class="modal" id="importModal">
+  <div class="modalbox">
+    <div class="flex" style="margin-bottom:20px">
+      <h2>Import CSV Leads</h2>
+      <button class="close"
+        onclick="closeModal('importModal')">×</button>
     </div>
 
     <p class="sub">
       Import up to 100 leads per batch.
-      Supported columns: name, phone, email,
-      lead_source, form_name.
     </p>
 
     <div class="field">
@@ -697,19 +812,17 @@ td {
     </div>
 
     <div class="field">
-      <label>Default Campaign / Form Name</label>
+      <label>Default Campaign / Form</label>
       <input class="input" id="importCampaign"
-        maxlength="150"
-        placeholder="Optional campaign name">
+        maxlength="150">
     </div>
 
-    <div id="importMessage" class="message"
-      role="status"></div>
+    <div id="importMessage" class="message"></div>
 
     <div class="flex">
       <button class="btn light"
         onclick="downloadTemplate()">
-        Download CSV Template
+        Download Template
       </button>
       <button class="btn blue" id="importBtn"
         onclick="importCSV()">
@@ -725,482 +838,611 @@ let allLeads = [];
 const $ = id => document.getElementById(id);
 
 function switchTab(tab) {
-  ["dashboard","leads","meta","settings"].forEach(t => {
-    $(t + "Section").classList.toggle(
-      "hidden",t !== tab
+  ['dashboard','leads','meta','settings'].forEach(t => {
+    $(t+'Section').classList.toggle(
+      'hidden',t!==tab
     );
   });
 
-  document.querySelectorAll(".nav").forEach(btn => {
+  document.querySelectorAll('.nav').forEach(btn => {
     btn.classList.toggle(
-      "active",btn.dataset.tab === tab
+      'active',btn.dataset.tab===tab
     );
   });
 
   const titles = {
-    dashboard:"Sales Overview",
-    leads:"Lead Management",
-    meta:"Meta Ads Manager",
-    settings:"CRM Settings"
+    dashboard:'Sales Overview',
+    leads:'Lead Management V3',
+    meta:'Meta Ads Manager',
+    settings:'CRM Settings'
   };
 
-  $("pageTitle").textContent = titles[tab];
-  $("pageSubtitle").textContent =
-    "Digital TATSAT Sales Intelligence CRM";
+  $('pageTitle').textContent = titles[tab];
 }
 
-document.querySelectorAll(".nav").forEach(btn => {
-  btn.addEventListener("click",() => {
+document.querySelectorAll('.nav').forEach(btn => {
+  btn.addEventListener('click',() => {
     switchTab(btn.dataset.tab);
   });
 });
 
 function openModal(id) {
-  $(id).classList.add("open");
+  $(id).classList.add('open');
 }
 
 function closeModal(id) {
-  $(id).classList.remove("open");
+  $(id).classList.remove('open');
 }
 
 function openAdd() {
-  $("addMessage").textContent = "";
-  openModal("addModal");
+  $('addMessage').textContent = '';
+  openModal('addModal');
 }
 
 function openImport(source) {
-  $("importMessage").textContent = "";
-  $("importSource").value = source || "Manual";
-  openModal("importModal");
+  $('importMessage').textContent = '';
+  $('importSource').value = source || 'Manual';
+  openModal('importModal');
 }
-
-document.querySelectorAll(".modal").forEach(modal => {
-  modal.addEventListener("click",e => {
-    if(e.target === modal) closeModal(modal.id);
-  });
-});
-
-document.addEventListener("keydown",e => {
-  if(e.key === "Escape") {
-    document.querySelectorAll(".modal.open").forEach(m => {
-      closeModal(m.id);
-    });
-  }
-});
 
 function showSetup() {
   alert(
-    "Automatic Meta connection requires the " +
-    "multi-client OAuth and webhook backend. " +
-    "No Facebook Page is connected yet."
+    'Automatic Meta lead capture requires ' +
+    'Facebook Page authorization and webhook setup.'
   );
 }
 
-function message(id,text,isError=false) {
-  $(id).textContent = text;
-  $(id).className =
-    "message " + (isError ? "error" : "success");
+document.querySelectorAll('.modal').forEach(m => {
+  m.addEventListener('click',e => {
+    if(e.target===m) closeModal(m.id);
+  });
+});
+
+document.addEventListener('keydown',e => {
+  if(e.key==='Escape') {
+    document.querySelectorAll('.modal.open')
+      .forEach(m => closeModal(m.id));
+  }
+});
+
+function message(id,text,error=false) {
+  $(id).textContent=text;
+  $(id).className=
+    'message '+(error?'error':'success');
 }
 
-function makeCell(value) {
-  const td = document.createElement("td");
-  td.textContent =
-    value === null || value === undefined ||
-    value === "" ? "—" : String(value);
+function cell(value) {
+  const td=document.createElement('td');
+  td.textContent=value===null ||
+    value===undefined ||
+    value===''?'—':String(value);
   return td;
 }
 
-async function loadLeads() {
-  try {
-    const response = await fetch("/api/leads",{
-      credentials:"same-origin",
-      cache:"no-store"
-    });
+function localToday() {
+  const d=new Date();
 
-    if(response.status === 401) {
-      location.href = "/login";
-      return;
-    }
-
-    if(!response.ok) {
-      throw new Error("Unable to load leads.");
-    }
-
-    const result = await response.json();
-
-    allLeads = Array.isArray(result.leads)
-      ? result.leads : [];
-
-    $("connection").textContent = "● Database Connected";
-
-    updateStats();
-    updateCampaignFilter();
-    renderLeads();
-    renderMeta();
-
-  } catch(error) {
-    $("connection").textContent =
-      "Database Connection Unavailable";
-
-    console.error(error);
-  }
+  return d.getFullYear()+'-'+
+    String(d.getMonth()+1).padStart(2,'0')+'-'+
+    String(d.getDate()).padStart(2,'0');
 }
 
 function updateStats() {
-  const count = status => allLeads.filter(l =>
-    String(l.status || "").toLowerCase() === status
+  const count=status=>allLeads.filter(l=>
+    String(l.status||'').toLowerCase()===status
   ).length;
 
-  $("total").textContent = allLeads.length;
-  $("newCount").textContent = count("new");
-  $("progress").textContent = count("in progress");
-  $("converted").textContent = count("converted");
+  $('total').textContent=allLeads.length;
+  $('newCount').textContent=count('new');
+  $('progress').textContent=count('in progress');
+  $('converted').textContent=count('converted');
 
-  $("dashboardLeadSummary").textContent =
-    allLeads.length + " leads currently available in CRM.";
-}
+  $('dashboardLeadSummary').textContent=
+    allLeads.length+' leads available in CRM.';
 
-function updateCampaignFilter() {
-  const select = $("clientFilter");
-  const previous = select.value;
-
-  select.replaceChildren(
-    new Option("All Campaigns / Forms","")
+  const pending=allLeads.filter(l=>
+    l.next_follow_up &&
+    !['Converted','Lost'].includes(l.status)
   );
 
-  const forms = [...new Set(
-    allLeads.map(l => l.form_name).filter(Boolean)
+  const due=pending.filter(l=>
+    String(l.next_follow_up).slice(0,10)<=localToday()
+  );
+
+  $('pendingCount').textContent=pending.length;
+  $('dueCount').textContent=due.length;
+}
+
+function updateCampaigns() {
+  const select=$('campaignFilter');
+  const previous=select.value;
+
+  select.replaceChildren(
+    new Option('All Campaigns / Forms','')
+  );
+
+  const forms=[...new Set(
+    allLeads.map(l=>l.form_name).filter(Boolean)
   )].sort();
 
-  forms.forEach(form => {
-    select.add(new Option(form,form));
-  });
+  forms.forEach(f=>select.add(new Option(f,f)));
 
-  if(forms.includes(previous)) {
-    select.value = previous;
-  }
+  if(forms.includes(previous)) select.value=previous;
 }
 
 function renderLeads() {
-  const search = $("search").value.toLowerCase();
-  const source = $("sourceFilter").value;
-  const campaign = $("clientFilter").value;
+  const search=$('search').value.toLowerCase();
+  const source=$('sourceFilter').value;
+  const campaign=$('campaignFilter').value;
 
-  const filtered = allLeads.filter(l => {
-    const text = [
-      l.id,l.name,l.phone,l.email,
-      l.lead_source,l.form_name,l.status
-    ].join(" ").toLowerCase();
+  const filtered=allLeads.filter(l=>{
+    const text=[
+      l.id,l.name,l.company,l.phone,l.email,
+      l.lead_source,l.form_name,l.assigned_to,
+      l.status,l.call_remarks
+    ].join(' ').toLowerCase();
 
     return text.includes(search) &&
-      (!source ||
-        (l.lead_source || "Manual") === source) &&
-      (!campaign || l.form_name === campaign);
+      (!source||(l.lead_source||'Manual')===source) &&
+      (!campaign||l.form_name===campaign);
   });
 
-  const body = $("leadsBody");
+  const body=$('leadsBody');
   body.replaceChildren();
 
   if(!filtered.length) {
-    const tr = document.createElement("tr");
-    const td = makeCell("No matching leads.");
-    td.colSpan = 7;
-    td.className = "empty";
+    const tr=document.createElement('tr');
+    const td=cell('No matching leads.');
+    td.colSpan=11;
+    td.className='empty';
     tr.appendChild(td);
     body.appendChild(tr);
     return;
   }
 
-  filtered.forEach(l => {
-    const tr = document.createElement("tr");
+  filtered.forEach(l=>{
+    const tr=document.createElement('tr');
 
     [
-      l.id,l.name,l.phone,l.email,
-      l.lead_source || "Manual",
-      l.form_name,l.status
-    ].forEach(value => {
-      tr.appendChild(makeCell(value));
-    });
+      l.id,l.name,l.company,l.phone,l.email,
+      l.lead_source||'Manual',
+      l.form_name,l.assigned_to
+    ].forEach(v=>tr.appendChild(cell(v)));
+
+    const statusTd=document.createElement('td');
+    const badge=document.createElement('span');
+    badge.className='badge';
+
+    if(l.status==='Converted') badge.classList.add('green');
+    if(l.status==='Lost') badge.classList.add('red');
+    if(l.status==='Follow-up') badge.classList.add('warning');
+
+    badge.textContent=l.status||'New';
+    statusTd.appendChild(badge);
+    tr.appendChild(statusTd);
+
+    tr.appendChild(cell(l.next_follow_up));
+
+    const action=document.createElement('td');
+    const btn=document.createElement('button');
+    btn.className='btn blue';
+    btn.textContent='Edit';
+    btn.onclick=()=>openEdit(l.id);
+    action.appendChild(btn);
+    tr.appendChild(action);
 
     body.appendChild(tr);
   });
 }
 
 function renderMeta() {
-  const meta = allLeads.filter(l =>
-    l.lead_source === "Meta Ads"
+  const meta=allLeads.filter(l=>
+    l.lead_source==='Meta Ads'
   );
 
-  $("metaCount").textContent = meta.length;
+  $('metaCount').textContent=meta.length;
 
-  const groups = new Map();
+  const groups=new Map();
 
-  meta.forEach(l => {
-    const key = l.form_name || "Unspecified Form";
-    groups.set(key,(groups.get(key) || 0) + 1);
+  meta.forEach(l=>{
+    const key=l.form_name||'Unspecified Form';
+    groups.set(key,(groups.get(key)||0)+1);
   });
 
-  $("formCount").textContent = groups.size;
+  $('formCount').textContent=groups.size;
 
-  const body = $("metaForms");
+  const body=$('metaForms');
   body.replaceChildren();
 
   if(!groups.size) {
-    const tr = document.createElement("tr");
-    const td = makeCell("No Meta leads imported yet.");
-    td.colSpan = 2;
-    td.className = "empty";
+    const tr=document.createElement('tr');
+    const td=cell('No Meta leads imported yet.');
+    td.colSpan=2;
+    td.className='empty';
     tr.appendChild(td);
     body.appendChild(tr);
     return;
   }
 
-  groups.forEach((count,name) => {
-    const tr = document.createElement("tr");
-    tr.appendChild(makeCell(name));
-    tr.appendChild(makeCell(count));
+  groups.forEach((count,name)=>{
+    const tr=document.createElement('tr');
+    tr.appendChild(cell(name));
+    tr.appendChild(cell(count));
     body.appendChild(tr);
   });
 }
 
-// SAVE LEAD
-$("leadForm").addEventListener("submit",async e => {
-  e.preventDefault();
-
-const payload = {
-  name: $("leadName").value.trim(),
-  company: $("company").value.trim(),
-  phone: $("phone").value.trim(),
-  email: $("email").value.trim(),
-  lead_source: $("leadSource").value,
-  assigned_to: $("assigned").value,
-  status: $("leadStatus").value,
-  form_name: $("campaign").value.trim()
-};
-
-  if(!payload.phone && !payload.email) {
-    message(
-      "addMessage",
-      "Phone or email is required.",
-      true
-    );
-    return;
-  }
-
-  const btn = $("saveBtn");
-  btn.disabled = true;
-
+async function loadLeads() {
   try {
-    const response = await fetch("/api/leads",{
-      method:"POST",
-      credentials:"same-origin",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify(payload)
+    const response=await fetch('/api/leads',{
+      credentials:'same-origin',
+      cache:'no-store'
     });
 
-    if(response.status === 401) {
-      location.href = "/login";
+    if(response.status===401) {
+      location.href='/login';
       return;
     }
 
-    const result = await response.json();
+    const result=await response.json();
 
     if(!response.ok) {
-      throw new Error(result.error || "Save failed.");
+      throw Error(result.error||'Unable to load leads');
     }
 
-    message("addMessage","Lead added successfully.");
+    allLeads=Array.isArray(result.leads)
+      ?result.leads:[];
 
-    $("leadForm").reset();
+    $('connection').textContent='● Database Connected';
+
+    updateStats();
+    updateCampaigns();
+    renderLeads();
+    renderMeta();
+
+  } catch(e) {
+    $('connection').textContent=
+      'Database Connection Unavailable';
+    console.error(e);
+  }
+}
+
+function leadPayload(prefix) {
+  const ids=prefix==='edit'
+    ?{
+      name:'editName',company:'editCompany',
+      phone:'editPhone',email:'editEmail',
+      source:'editSource',assigned:'editAssigned',
+      status:'editStatus',campaign:'editCampaign',
+      remarks:'editRemarks',followup:'editFollowUp'
+    }
+    :{
+      name:'leadName',company:'company',
+      phone:'phone',email:'email',
+      source:'leadSource',assigned:'assigned',
+      status:'leadStatus',campaign:'campaign',
+      remarks:'remarks',followup:'followUp'
+    };
+
+  return {
+    name:$(ids.name).value.trim(),
+    company:$(ids.company).value.trim(),
+    phone:$(ids.phone).value.trim(),
+    email:$(ids.email).value.trim(),
+    lead_source:$(ids.source).value,
+    assigned_to:$(ids.assigned).value,
+    status:$(ids.status).value,
+    form_name:$(ids.campaign).value.trim(),
+    call_remarks:$(ids.remarks).value.trim(),
+    next_follow_up:$(ids.followup).value
+  };
+}
+
+// ADD LEAD
+
+$('leadForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+
+  const payload=leadPayload('add');
+
+  if(!payload.phone&&!payload.email) {
+    message('addMessage','Phone or email required',true);
+    return;
+  }
+
+  const btn=$('saveBtn');
+  btn.disabled=true;
+
+  try {
+    const response=await fetch('/api/leads',{
+      method:'POST',
+      credentials:'same-origin',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+
+    if(response.status===401) {
+      location.href='/login';
+      return;
+    }
+
+    const result=await response.json();
+
+    if(!response.ok) {
+      throw Error(result.error||'Unable to save lead');
+    }
+
+    message('addMessage','Lead added successfully!');
+    $('leadForm').reset();
+
     await loadLeads();
 
-    setTimeout(() => closeModal("addModal"),600);
+    setTimeout(()=>closeModal('addModal'),700);
 
-  } catch(error) {
-    message("addMessage",error.message,true);
+  } catch(e) {
+    message('addMessage',e.message,true);
   } finally {
-    btn.disabled = false;
+    btn.disabled=false;
+  }
+});
+
+// EDIT LEAD
+
+function openEdit(id) {
+  const lead=allLeads.find(l=>
+    String(l.id)===String(id)
+  );
+
+  if(!lead) return;
+
+  $('editId').value=lead.id;
+  $('editName').value=lead.name||'';
+  $('editCompany').value=lead.company||'';
+  $('editPhone').value=lead.phone||'';
+  $('editEmail').value=lead.email||'';
+  $('editSource').value=lead.lead_source||'Manual';
+  $('editStatus').value=lead.status||'New';
+  $('editCampaign').value=lead.form_name||'';
+  $('editRemarks').value=lead.call_remarks||'';
+
+  $('editFollowUp').value=lead.next_follow_up
+    ?String(lead.next_follow_up).slice(0,10)
+    :'';
+
+  const assigned=$('editAssigned');
+  const value=lead.assigned_to||'';
+
+  if(value&&!Array.from(assigned.options)
+    .some(o=>o.value===value)) {
+    assigned.add(new Option(value,value));
+  }
+
+  assigned.value=value;
+
+  $('editMessage').textContent='';
+  openModal('editModal');
+}
+
+$('editForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+
+  const id=$('editId').value;
+  const payload=leadPayload('edit');
+
+  if(!payload.phone&&!payload.email) {
+    message('editMessage','Phone or email required',true);
+    return;
+  }
+
+  const btn=$('editSaveBtn');
+  btn.disabled=true;
+
+  try {
+    const response=await fetch(
+      '/api/leads/'+encodeURIComponent(id),
+      {
+        method:'PATCH',
+        credentials:'same-origin',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload)
+      }
+    );
+
+    if(response.status===401) {
+      location.href='/login';
+      return;
+    }
+
+    const result=await response.json();
+
+    if(!response.ok) {
+      throw Error(result.error||'Update failed');
+    }
+
+    message('editMessage','Lead updated successfully!');
+    await loadLeads();
+
+    setTimeout(()=>closeModal('editModal'),700);
+
+  } catch(e) {
+    message('editMessage',e.message,true);
+  } finally {
+    btn.disabled=false;
   }
 });
 
 // CSV TEMPLATE
+
 function downloadTemplate() {
-  const csv =
-    "name,phone,email,lead_source,form_name\r\n" +
-    "Sample Customer,9876543210,,Meta Ads,October Campaign";
+  const csv=
+    'name,company,phone,email,lead_source,form_name,'+
+    'assigned_to,status,call_remarks,next_follow_up\r\n'+
+    'Sample Lead,Sample Company,9876543210,,Meta Ads,'+
+    'October Campaign,Admin,New,,';
 
-  const blob = new Blob(
-    ["\uFEFF" + csv],
-    {type:"text/csv;charset=utf-8"}
-  );
+  const blob=new Blob(['\uFEFF'+csv],{
+    type:'text/csv;charset=utf-8'
+  });
 
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-
-  a.href = url;
-  a.download = "digital_tatsat_leads.csv";
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='digital_tatsat_v3_leads.csv';
   a.click();
 
-  setTimeout(() => URL.revokeObjectURL(url),1000);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
 // CSV PARSER
-function parseCSV(text) {
-  const rows = [];
-  let row = [];
-  let field = "";
-  let quoted = false;
 
-  text = text.replace(/^\uFEFF/,"");
+function parseCSV(text) {
+  const rows=[];
+  let row=[];
+  let field='';
+  let quoted=false;
+
+  text=text.replace(/^\uFEFF/,'');
 
   for(let i=0;i<text.length;i++) {
-    const c = text[i];
+    const c=text[i];
 
-    if(c === '"') {
-      if(quoted && text[i+1] === '"') {
-        field += '"';
+    if(c==='"') {
+      if(quoted&&text[i+1]==='"') {
+        field+='"';
         i++;
       } else {
-        quoted = !quoted;
+        quoted=!quoted;
       }
-    } else if(c === "," && !quoted) {
+    } else if(c===','&&!quoted) {
       row.push(field);
-      field = "";
-    } else if((c === "\n" || c === "\r") && !quoted) {
-      if(c === "\r" && text[i+1] === "\n") i++;
+      field='';
+    } else if((c==='\n'||c==='\r')&&!quoted) {
+      if(c==='\r'&&text[i+1]==='\n') i++;
       row.push(field);
-
-      if(row.some(v => v.trim())) rows.push(row);
-
-      row = [];
-      field = "";
+      if(row.some(v=>v.trim())) rows.push(row);
+      row=[];
+      field='';
     } else {
-      field += c;
+      field+=c;
     }
   }
 
-  if(quoted) {
-    throw new Error("Unclosed quote in CSV.");
-  }
+  if(quoted) throw Error('Unclosed quote in CSV');
 
   row.push(field);
-  if(row.some(v => v.trim())) rows.push(row);
+  if(row.some(v=>v.trim())) rows.push(row);
 
   return rows;
 }
 
 // CSV IMPORT
+
 async function importCSV() {
-  const file = $("csvFile").files[0];
+  const file=$('csvFile').files[0];
 
   if(!file) {
-    message("importMessage","Choose a CSV file.",true);
+    message('importMessage','Choose a CSV file',true);
     return;
   }
 
-  if(file.size > 200000) {
-    message(
-      "importMessage",
-      "File too large. Maximum 100 leads per batch.",
-      true
-    );
+  if(file.size>200000) {
+    message('importMessage','CSV file too large',true);
     return;
   }
 
-  const btn = $("importBtn");
-  btn.disabled = true;
+  const btn=$('importBtn');
+  btn.disabled=true;
 
   try {
-    const rows = parseCSV(await file.text());
+    const rows=parseCSV(await file.text());
 
-    if(rows.length < 2) {
-      throw new Error("CSV has no data rows.");
+    if(rows.length<2) {
+      throw Error('CSV has no data rows');
     }
 
-    const headers = rows[0].map(v =>
-      v.trim().toLowerCase().replace(/\s+/g,"_")
+    if(rows.length-1>100) {
+      throw Error('Maximum 100 leads per import');
+    }
+
+    const headers=rows[0].map(v=>
+      v.trim().toLowerCase().replace(/\s+/g,'_')
     );
 
-    const aliases = {
-      name:["name","full_name","full_name_(required)"],
-      phone:["phone","phone_number","mobile","mobile_number"],
-      email:["email","email_address"],
-      form_name:["form_name","campaign_name"],
-      lead_source:["lead_source"]
+    const aliases={
+      name:['name','full_name'],
+      phone:['phone','phone_number','mobile'],
+      email:['email','email_address'],
+      company:['company','company_name'],
+      lead_source:['lead_source'],
+      form_name:['form_name','campaign_name'],
+      assigned_to:['assigned_to'],
+      status:['status'],
+      call_remarks:['call_remarks'],
+      next_follow_up:['next_follow_up']
     };
 
-    function getValue(row,key) {
+    function get(row,key) {
       for(const alias of aliases[key]) {
-        const index = headers.indexOf(alias);
-        if(index >= 0) {
-          return String(row[index] || "").trim();
-        }
+        const i=headers.indexOf(alias);
+        if(i>=0) return String(row[i]||'').trim();
       }
-      return "";
+      return '';
     }
 
-    if(!aliases.name.some(x => headers.includes(x))) {
-      throw new Error(
-        "CSV must contain name or full_name column."
-      );
+    if(!aliases.name.some(a=>headers.includes(a))) {
+      throw Error('CSV requires name or full_name column');
     }
 
-    if(rows.length - 1 > 100) {
-      throw new Error(
-        "Maximum 100 leads per import."
-      );
-    }
-
-    const leads = rows.slice(1).map(row => ({
-      name:getValue(row,"name"),
-      phone:getValue(row,"phone"),
-      email:getValue(row,"email"),
-      lead_source:
-        getValue(row,"lead_source") ||
-        $("importSource").value,
-      form_name:
-        getValue(row,"form_name") ||
-        $("importCampaign").value.trim()
+    const leads=rows.slice(1).map(row=>({
+      name:get(row,'name'),
+      phone:get(row,'phone'),
+      email:get(row,'email'),
+      company:get(row,'company'),
+      lead_source:get(row,'lead_source')||
+        $('importSource').value,
+      form_name:get(row,'form_name')||
+        $('importCampaign').value.trim(),
+      assigned_to:get(row,'assigned_to'),
+      status:get(row,'status')||'New',
+      call_remarks:get(row,'call_remarks'),
+      next_follow_up:get(row,'next_follow_up')
     }));
 
-    const response = await fetch("/api/leads/import",{
-      method:"POST",
-      credentials:"same-origin",
-      headers:{"Content-Type":"application/json"},
+    const response=await fetch('/api/leads/import',{
+      method:'POST',
+      credentials:'same-origin',
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({leads})
     });
 
-    if(response.status === 401) {
-      location.href = "/login";
+    if(response.status===401) {
+      location.href='/login';
       return;
     }
 
-    const result = await response.json();
+    const result=await response.json();
 
     if(!response.ok) {
-      throw new Error(result.error || "Import failed.");
+      throw Error(result.error||'Import failed');
     }
 
     message(
-      "importMessage",
-      "Import completed.\n" +
-      "Imported: " + result.imported + "\n" +
-      "Duplicates: " + result.duplicates + "\n" +
-      "Invalid: " + result.invalid + "\n" +
-      "Failed: " + result.failed,
-      result.failed > 0 || result.invalid > 0
+      'importMessage',
+      'Imported: '+result.imported+'\n'+
+      'Duplicates: '+result.duplicates+'\n'+
+      'Invalid: '+result.invalid+'\n'+
+      'Failed: '+result.failed
     );
 
     await loadLeads();
 
-  } catch(error) {
-    message("importMessage",error.message,true);
+  } catch(e) {
+    message('importMessage',e.message,true);
   } finally {
-    btn.disabled = false;
+    btn.disabled=false;
   }
 }
 
-// INITIAL LOAD
 loadLeads();
 </script>
 </body>
