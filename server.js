@@ -190,91 +190,10 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// PROTECTED ADMIN DASHBOARD
+// PROTECTED PREMIUM ADMIN DASHBOARD
 app.get("/dashboard", verifyAdmin, (req, res) => {
   res.set("Cache-Control", "no-store");
-
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport"
-            content="width=device-width, initial-scale=1">
-      <title>Digital TATSAT CRM Dashboard</title>
-      <style>
-        * { box-sizing: border-box; }
-
-        body {
-          margin: 0;
-          background: #071426;
-          color: white;
-          font-family: Arial, sans-serif;
-        }
-
-        header {
-          padding: 24px;
-          background: #102440;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 16px;
-          flex-wrap: wrap;
-        }
-
-        h1 { margin: 0; font-size: 24px; }
-
-        main {
-          max-width: 1100px;
-          margin: 50px auto;
-          padding: 24px;
-        }
-
-        .card {
-          background: #142945;
-          border: 1px solid #294362;
-          padding: 30px;
-          border-radius: 16px;
-        }
-
-        button {
-          background: white;
-          color: #071426;
-          border: none;
-          border-radius: 8px;
-          padding: 12px 20px;
-          font-weight: bold;
-          cursor: pointer;
-        }
-
-        p { color: #c5d2e3; }
-      </style>
-    </head>
-
-    <body>
-      <header>
-        <h1>Digital TATSAT CRM</h1>
-
-        <form method="POST" action="/logout">
-          <button type="submit">Logout</button>
-        </form>
-      </header>
-
-      <main>
-        <div class="card">
-          <h2>Welcome to Admin Dashboard</h2>
-          <p>
-            Your Admin login has been verified successfully.
-          </p>
-          <p>
-            Sales, leads, follow-ups and calling
-            features will be added here.
-          </p>
-        </div>
-      </main>
-    </body>
-    </html>
-  `);
+  res.sendFile(path.join(__dirname, "dashboard.html"));
 });
 
 // LOGOUT
@@ -288,7 +207,8 @@ app.post("/logout", (req, res) => {
 
   res.redirect("/login");
 });
- // PROTECTED ADMIN LEADS API
+
+// PROTECTED ADMIN LEADS API
 app.get("/api/leads", verifyAdmin, async (req, res) => {
   res.set("Cache-Control", "no-store");
 
@@ -323,6 +243,7 @@ app.get("/api/leads", verifyAdmin, async (req, res) => {
     });
   }
 });
+
 // SERVER HEALTH
 app.get("/health", (req, res) => {
   res.json({
