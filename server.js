@@ -10,6 +10,10 @@ app.use(express.json({ limit: "20kb" }));
 
 const COOKIE_NAME = "dt_crm_session";
 
+// ==========================================
+// SUPABASE CONNECTION
+// ==========================================
+
 function getSupabase(token) {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_ANON_KEY;
@@ -40,6 +44,10 @@ function getSupabase(token) {
   return createClient(url, key, options);
 }
 
+// ==========================================
+// SESSION COOKIE
+// ==========================================
+
 function getSessionToken(req) {
   const cookies = req.headers.cookie || "";
 
@@ -58,6 +66,10 @@ function getSessionToken(req) {
     return null;
   }
 }
+
+// ==========================================
+// ADMIN AUTHENTICATION
+// ==========================================
 
 async function verifyAdmin(req, res, next) {
   try {
@@ -94,7 +106,10 @@ async function verifyAdmin(req, res, next) {
     next();
 
   } catch (error) {
-    console.error("Session verification error:", error.message);
+    console.error(
+      "Session verification error:",
+      error.message
+    );
 
     return res.status(503).send(
       "Authentication temporarily unavailable."
@@ -102,18 +117,30 @@ async function verifyAdmin(req, res, next) {
   }
 }
 
+// ==========================================
 // HOMEPAGE
+// ==========================================
+
 app.get("/", (req, res) => {
   res.redirect("/login");
 });
 
+// ==========================================
 // PREMIUM LOGIN PAGE
+// ==========================================
+
 app.get("/login", (req, res) => {
   res.set("Cache-Control", "no-store");
-  res.sendFile(path.join(__dirname, "login.html"));
+
+  res.sendFile(
+    path.join(__dirname, "login.html")
+  );
 });
 
+// ==========================================
 // ADMIN LOGIN API
+// ==========================================
+
 app.post("/api/login", async (req, res) => {
   res.set("Cache-Control", "no-store");
 
@@ -139,7 +166,11 @@ app.post("/api/login", async (req, res) => {
         password
       });
 
-    if (error || !data.session || !data.user) {
+    if (
+      error ||
+      !data.session ||
+      !data.user
+    ) {
       return res.status(401).json({
         error: "Invalid email or password."
       });
@@ -155,7 +186,10 @@ app.post("/api/login", async (req, res) => {
         .eq("user_id", data.user.id)
         .single();
 
-    if (roleError || roleData?.role !== "admin") {
+    if (
+      roleError ||
+      roleData?.role !== "admin"
+    ) {
       return res.status(403).json({
         error: "Admin access not authorized."
       });
@@ -182,7 +216,10 @@ app.post("/api/login", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Login error:", error.message);
+    console.error(
+      "Login error:",
+      error.message
+    );
 
     return res.status(503).json({
       error: "Login temporarily unavailable."
@@ -190,13 +227,22 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// PROTECTED PREMIUM ADMIN DASHBOARD
+// ==========================================
+// PROTECTED PREMIUM DASHBOARD
+// ==========================================
+
 app.get("/dashboard", verifyAdmin, (req, res) => {
   res.set("Cache-Control", "no-store");
-  res.sendFile(path.join(__dirname, "dashboard.html"));
+
+  res.sendFile(
+    path.join(__dirname, "dashboard.html")
+  );
 });
 
+// ==========================================
 // LOGOUT
+// ==========================================
+
 app.post("/logout", (req, res) => {
   res.clearCookie(COOKIE_NAME, {
     path: "/",
@@ -208,7 +254,10 @@ app.post("/logout", (req, res) => {
   res.redirect("/login");
 });
 
-// PROTECTED ADMIN LEADS API
+// ==========================================
+// GET ALL LEADS
+// ==========================================
+
 app.get("/api/leads", verifyAdmin, async (req, res) => {
   res.set("Cache-Control", "no-store");
 
@@ -222,10 +271,13 @@ app.get("/api/leads", verifyAdmin, async (req, res) => {
       .order("id", { ascending: false });
 
     if (error) {
-      console.error("Lead fetch failed:", error.code);
+      console.error(
+        "Lead fetch failed:",
+        error.code
+      );
 
       return res.status(500).json({
-        error: "Unable to load leads"
+        error: "Unable to load leads."
       });
     }
 
@@ -236,15 +288,107 @@ app.get("/api/leads", verifyAdmin, async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Leads API error:", error.message);
+    console.error(
+      "Leads API error:",
+      error.message
+    );
 
     return res.status(503).json({
-      error: "Leads temporarily unavailable"
+      error: "Leads temporarily unavailable."
     });
   }
 });
 
+// ==========================================
+// ADD NEW LEAD
+// ==========================================
+
+app.post("/api/leads", verifyAdmin, async (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  try {
+    const { name, phone, email } = req.body || {};
+
+    if (
+      typeof name !== "string" ||
+      !name.trim() ||
+      name.trim().length > 150
+    ) {
+      return res.status(400).json({
+        error: "Valid customer name is required."
+      });
+    }
+
+    const cleanPhone =
+      typeof phone === "string"
+        ? phone.trim()
+        : "";
+
+    const cleanEmail =
+      typeof email === "string"
+        ? email.trim()
+        : "";
+
+    if (!cleanPhone && !cleanEmail) {
+      return res.status(400).json({
+        error: "Phone number or email is required."
+      });
+    }
+
+    if (
+      cleanPhone.length > 20 ||
+      cleanEmail.length > 254
+    ) {
+      return res.status(400).json({
+        error: "Contact information is too long."
+      });
+    }
+
+    const supabase = getSupabase(
+      getSessionToken(req)
+    );
+
+    const { error } = await supabase
+      .from("LEADS 1")
+      .insert({
+        name: name.trim(),
+        phone: cleanPhone || null,
+        email: cleanEmail || null,
+        status: "New"
+      });
+
+    if (error) {
+      console.error(
+        "Add lead failed:",
+        error.code
+      );
+
+      return res.status(500).json({
+        error: "Unable to add lead."
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Lead added successfully."
+    });
+
+  } catch (error) {
+    console.error(
+      "Add lead error:",
+      error.message
+    );
+
+    return res.status(503).json({
+      error: "Lead service temporarily unavailable."
+    });
+  }
+});
+
+// ==========================================
 // SERVER HEALTH
+// ==========================================
+
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
@@ -252,7 +396,10 @@ app.get("/health", (req, res) => {
   });
 });
 
+// ==========================================
 // SUPABASE CONNECTION CHECK
+// ==========================================
+
 app.get("/db-health", async (req, res) => {
   if (
     !process.env.SUPABASE_URL ||
@@ -272,7 +419,10 @@ app.get("/db-health", async (req, res) => {
       .limit(1);
 
     if (error) {
-      console.error("Database check:", error.code);
+      console.error(
+        "Database check:",
+        error.code
+      );
 
       return res.status(503).json({
         database: "connection_or_permission_error"
@@ -285,7 +435,10 @@ app.get("/db-health", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Database error:", error.message);
+    console.error(
+      "Database error:",
+      error.message
+    );
 
     return res.status(503).json({
       database: "connection_error"
@@ -293,7 +446,10 @@ app.get("/db-health", async (req, res) => {
   }
 });
 
+// ==========================================
 // START SERVER
+// ==========================================
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
