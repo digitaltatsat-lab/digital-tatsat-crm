@@ -288,7 +288,41 @@ app.post("/logout", (req, res) => {
 
   res.redirect("/login");
 });
+ // PROTECTED ADMIN LEADS API
+app.get("/api/leads", verifyAdmin, async (req, res) => {
+  res.set("Cache-Control", "no-store");
 
+  try {
+    const token = getSessionToken(req);
+    const supabase = getSupabase(token);
+
+    const { data, error } = await supabase
+      .from("LEADS 1")
+      .select("id, name, phone, email, status")
+      .order("id", { ascending: false });
+
+    if (error) {
+      console.error("Lead fetch failed:", error.code);
+
+      return res.status(500).json({
+        error: "Unable to load leads"
+      });
+    }
+
+    return res.json({
+      success: true,
+      count: data.length,
+      leads: data
+    });
+
+  } catch (error) {
+    console.error("Leads API error:", error.message);
+
+    return res.status(503).json({
+      error: "Leads temporarily unavailable"
+    });
+  }
+});
 // SERVER HEALTH
 app.get("/health", (req, res) => {
   res.json({
