@@ -1,0 +1,892 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Digital TATSAT | Premium CRM</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --navy:#081629;
+  --navy2:#112743;
+  --blue:#377bff;
+  --bg:#f5f8fd;
+  --text:#172b47;
+  --muted:#71839b;
+  --line:#e4ebf4;
+  --white:#fff;
+}
+
+* {
+  box-sizing:border-box;
+}
+
+body {
+  margin:0;
+  font-family:Inter,Arial,sans-serif;
+  color:var(--text);
+  background-color:var(--bg);
+  background-image:
+    linear-gradient(rgba(45,88,150,.045) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(45,88,150,.045) 1px,transparent 1px);
+  background-size:28px 28px;
+}
+
+button,input {
+  font:inherit;
+}
+
+.sidebar {
+  position:fixed;
+  inset:0 auto 0 0;
+  width:260px;
+  background:linear-gradient(160deg,#071427,#142d4e);
+  color:white;
+  padding:28px 18px;
+  z-index:10;
+  box-shadow:8px 0 35px rgba(10,30,60,.1);
+}
+
+.brand {
+  font-size:21px;
+  font-weight:800;
+  letter-spacing:-.6px;
+  padding:8px 12px;
+}
+
+.brand span {
+  color:#73adff;
+}
+
+.brand-sub {
+  color:#91a9c7;
+  font-size:10px;
+  letter-spacing:2px;
+  padding:0 12px;
+  margin-bottom:44px;
+}
+
+.menu-label {
+  color:#708aa9;
+  font-size:10px;
+  letter-spacing:2px;
+  margin:24px 12px 12px;
+}
+
+.nav {
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+
+.nav a,
+.nav .disabled {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 16px;
+  border-radius:12px;
+  color:#b7c8dd;
+  font-size:13px;
+  text-decoration:none;
+  transition:.25s ease;
+}
+
+.nav a:hover {
+  background:rgba(255,255,255,.08);
+  color:white;
+  transform:translateX(3px);
+}
+
+.nav a.active {
+  background:linear-gradient(110deg,#2862d8,#4288ff);
+  color:white;
+  box-shadow:0 8px 24px rgba(40,100,220,.3);
+}
+
+.nav .disabled {
+  opacity:.42;
+}
+
+.sidebar-bottom {
+  position:absolute;
+  bottom:24px;
+  left:18px;
+  right:18px;
+}
+
+.logout-btn {
+  width:100%;
+  background:rgba(255,255,255,.06);
+  color:white;
+  border:1px solid rgba(255,255,255,.15);
+  padding:13px;
+  border-radius:12px;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.logout-btn:hover {
+  background:rgba(255,255,255,.14);
+}
+
+.main {
+  margin-left:260px;
+  padding:34px;
+  min-height:100vh;
+}
+
+.topbar {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  flex-wrap:wrap;
+  margin-bottom:28px;
+}
+
+.eyebrow {
+  color:var(--blue);
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  margin-bottom:9px;
+}
+
+h1 {
+  font-size:30px;
+  letter-spacing:-1px;
+  margin:0 0 9px;
+}
+
+.subtext {
+  font-size:13px;
+  color:var(--muted);
+  margin:0;
+}
+
+.admin {
+  display:flex;
+  align-items:center;
+  gap:11px;
+  background:white;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:9px 15px 9px 9px;
+  box-shadow:0 5px 20px rgba(20,45,80,.04);
+}
+
+.avatar {
+  width:37px;
+  height:37px;
+  border-radius:11px;
+  background:#e6efff;
+  color:#275ec4;
+  display:grid;
+  place-items:center;
+  font-weight:800;
+}
+
+.admin strong {
+  display:block;
+  font-size:12px;
+}
+
+.admin small {
+  color:var(--muted);
+  font-size:10px;
+}
+
+.hero {
+  background:linear-gradient(110deg,#0b2040,#174a89);
+  border-radius:20px;
+  color:white;
+  padding:30px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:20px;
+  margin-bottom:24px;
+  position:relative;
+  overflow:hidden;
+  animation:rise .6s ease both;
+}
+
+.hero:after {
+  content:"";
+  position:absolute;
+  width:300px;
+  height:300px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:50%;
+  right:-80px;
+  top:-160px;
+  box-shadow:
+    0 0 0 45px rgba(255,255,255,.025),
+    0 0 0 90px rgba(255,255,255,.02);
+}
+
+.hero h2 {
+  font-size:23px;
+  margin:0 0 9px;
+  letter-spacing:-.6px;
+}
+
+.hero p {
+  color:#b9d2f1;
+  font-size:13px;
+  margin:0;
+  line-height:1.7;
+}
+
+.live-pill {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:30px;
+  padding:11px 15px;
+  font-size:11px;
+  font-weight:700;
+  white-space:nowrap;
+  z-index:1;
+}
+
+.dot {
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#4ce3aa;
+  box-shadow:0 0 0 5px rgba(76,227,170,.12);
+  animation:pulse 2s infinite;
+}
+
+.stats {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:18px;
+  margin-bottom:24px;
+}
+
+.stat {
+  background:rgba(255,255,255,.94);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:23px;
+  position:relative;
+  overflow:hidden;
+  box-shadow:0 7px 25px rgba(20,45,80,.035);
+  transition:transform .25s,box-shadow .25s;
+  animation:rise .65s ease both;
+}
+
+.stat:nth-child(2) {animation-delay:.08s}
+.stat:nth-child(3) {animation-delay:.16s}
+.stat:nth-child(4) {animation-delay:.24s}
+
+.stat:hover {
+  transform:translateY(-5px);
+  box-shadow:0 16px 35px rgba(20,45,80,.1);
+}
+
+.stat:before {
+  content:"";
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:3px;
+  background:linear-gradient(90deg,#377bff,#8db8ff);
+}
+
+.stat-icon {
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  background:#ebf2ff;
+  color:#3975e7;
+  border-radius:12px;
+  font-size:19px;
+  margin-bottom:18px;
+}
+
+.stat-label {
+  color:var(--muted);
+  font-size:12px;
+  font-weight:600;
+}
+
+.stat-number {
+  font-size:34px;
+  font-weight:800;
+  letter-spacing:-1px;
+  margin:9px 0;
+}
+
+.stat-foot {
+  color:#91a0b2;
+  font-size:11px;
+}
+
+.panel {
+  background:white;
+  border:1px solid var(--line);
+  border-radius:20px;
+  overflow:hidden;
+  box-shadow:0 8px 30px rgba(20,45,80,.035);
+  animation:rise .7s ease .2s both;
+}
+
+.panel-head {
+  padding:24px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  flex-wrap:wrap;
+}
+
+.panel-title h2 {
+  font-size:18px;
+  margin:0 0 7px;
+}
+
+.panel-title p {
+  color:var(--muted);
+  font-size:12px;
+  margin:0;
+}
+
+.actions {
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.search {
+  border:1px solid var(--line);
+  border-radius:11px;
+  padding:12px 14px;
+  min-width:240px;
+  outline:none;
+  font-size:12px;
+  background:#fbfcff;
+}
+
+.search:focus {
+  border-color:#6a9bff;
+  box-shadow:0 0 0 3px rgba(55,123,255,.1);
+}
+
+.refresh {
+  background:#102b4c;
+  border:0;
+  border-radius:11px;
+  color:white;
+  padding:12px 17px;
+  cursor:pointer;
+  font-size:12px;
+  font-weight:700;
+  transition:.2s;
+}
+
+.refresh:hover {
+  background:#225da5;
+}
+
+.table-wrap {
+  overflow-x:auto;
+}
+
+table {
+  width:100%;
+  border-collapse:collapse;
+  text-align:left;
+}
+
+thead {
+  background:#f7f9fd;
+}
+
+th {
+  font-size:11px;
+  color:#71839b;
+  text-transform:uppercase;
+  letter-spacing:.6px;
+  padding:17px 22px;
+  white-space:nowrap;
+}
+
+td {
+  padding:17px 22px;
+  border-top:1px solid #edf1f7;
+  font-size:12px;
+}
+
+tbody tr {
+  transition:background .2s;
+}
+
+tbody tr:hover {
+  background:#f7faff;
+}
+
+.lead-name {
+  font-weight:700;
+  color:#173252;
+}
+
+.id-tag {
+  color:#7e91a8;
+  font-weight:700;
+}
+
+.status {
+  display:inline-block;
+  padding:7px 12px;
+  border-radius:20px;
+  font-size:10px;
+  font-weight:800;
+  background:#e9f1ff;
+  color:#316acb;
+}
+
+.status.progress {
+  background:#fff3db;
+  color:#a66a05;
+}
+
+.status.converted {
+  background:#e4f8ed;
+  color:#17854c;
+}
+
+.empty {
+  text-align:center;
+  color:var(--muted);
+  padding:36px;
+}
+
+.footer {
+  margin-top:24px;
+  color:#8b9bb0;
+  font-size:11px;
+  text-align:center;
+}
+
+@keyframes rise {
+  from {
+    opacity:0;
+    transform:translateY(18px);
+  }
+  to {
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%,100% {
+    box-shadow:0 0 0 4px rgba(76,227,170,.1);
+  }
+  50% {
+    box-shadow:0 0 0 8px rgba(76,227,170,.03);
+  }
+}
+
+@media(max-width:1150px) {
+  .stats {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+@media(max-width:760px) {
+  .sidebar {
+    position:relative;
+    width:100%;
+    padding:18px;
+  }
+
+  .brand-sub {
+    margin-bottom:16px;
+  }
+
+  .menu-label {
+    display:none;
+  }
+
+  .nav {
+    flex-direction:row;
+    overflow-x:auto;
+  }
+
+  .nav a,.nav .disabled {
+    white-space:nowrap;
+  }
+
+  .sidebar-bottom {
+    position:static;
+    margin-top:14px;
+  }
+
+  .main {
+    margin:0;
+    padding:18px;
+  }
+
+  .hero {
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  h1 {
+    font-size:25px;
+  }
+
+  .stats {
+    gap:10px;
+  }
+
+  .stat {
+    padding:17px;
+  }
+
+  .stat-number {
+    font-size:28px;
+  }
+
+  .actions,.search {
+    width:100%;
+    min-width:0;
+  }
+}
+
+@media(prefers-reduced-motion:reduce) {
+  *,*:before,*:after {
+    animation:none!important;
+    transition:none!important;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<aside class="sidebar">
+  <div class="brand">
+    DIGITAL <span>TATSAT</span>
+  </div>
+
+  <div class="brand-sub">SALES INTELLIGENCE CRM</div>
+
+  <div class="menu-label">WORKSPACE</div>
+
+  <nav class="nav">
+    <a class="active" href="/dashboard">◈ Dashboard</a>
+    <a href="#leads">◉ Lead Management</a>
+    <span class="disabled">◷ Follow-ups</span>
+    <span class="disabled">◇ Sales Pipeline</span>
+    <span class="disabled">☎ Calling</span>
+  </nav>
+
+  <div class="sidebar-bottom">
+    <form action="/logout" method="POST">
+      <button class="logout-btn" type="submit">
+        ↪ Sign Out
+      </button>
+    </form>
+  </div>
+</aside>
+
+<main class="main">
+
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">Digital TATSAT Workspace</div>
+      <h1>Sales Overview</h1>
+      <p class="subtext">
+        Monitor your leads and business activity.
+      </p>
+    </div>
+
+    <div class="admin">
+      <div class="avatar">DT</div>
+      <div>
+        <strong>Administrator</strong>
+        <small>CRM Management</small>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div>
+      <h2>Welcome to your command center.</h2>
+      <p>
+        Your sales operations, customer records and
+        business insights — all in one workspace.
+      </p>
+    </div>
+
+    <div class="live-pill">
+      <span class="dot"></span>
+      <span id="connectionText">Connecting...</span>
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="stat">
+      <div class="stat-icon">◉</div>
+      <div class="stat-label">Total Leads</div>
+      <div class="stat-number" id="total">—</div>
+      <div class="stat-foot">Database records</div>
+    </div>
+
+    <div class="stat">
+      <div class="stat-icon">✦</div>
+      <div class="stat-label">New Leads</div>
+      <div class="stat-number" id="new">—</div>
+      <div class="stat-foot">Awaiting contact</div>
+    </div>
+
+    <div class="stat">
+      <div class="stat-icon">◷</div>
+      <div class="stat-label">In Progress</div>
+      <div class="stat-number" id="progress">—</div>
+      <div class="stat-foot">Currently being handled</div>
+    </div>
+
+    <div class="stat">
+      <div class="stat-icon">✓</div>
+      <div class="stat-label">Converted</div>
+      <div class="stat-number" id="converted">—</div>
+      <div class="stat-foot">Successful conversions</div>
+    </div>
+  </section>
+
+  <section class="panel" id="leads">
+
+    <div class="panel-head">
+      <div class="panel-title">
+        <h2>Lead Management</h2>
+        <p>Live customer records from your CRM database.</p>
+      </div>
+
+      <div class="actions">
+        <input
+          class="search"
+          type="search"
+          id="search"
+          placeholder="Search name, phone or email..."
+          aria-label="Search leads"
+        >
+
+        <button class="refresh" id="refresh" type="button">
+          ↻ Refresh
+        </button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Lead ID</th>
+            <th>Customer Name</th>
+            <th>Phone Number</th>
+            <th>Email Address</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+
+        <tbody id="leadsBody">
+          <tr>
+            <td class="empty" colspan="5">
+              Loading customer records...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </section>
+
+  <footer class="footer">
+    © Digital TATSAT · Premium Sales CRM
+  </footer>
+
+</main>
+
+<script>
+let allLeads = [];
+
+const tbody = document.getElementById("leadsBody");
+const search = document.getElementById("search");
+const refresh = document.getElementById("refresh");
+
+function updateText(id,value) {
+  document.getElementById(id).textContent = value;
+}
+
+function showMessage(message) {
+  tbody.replaceChildren();
+
+  const tr = document.createElement("tr");
+  const td = document.createElement("td");
+
+  td.colSpan = 5;
+  td.className = "empty";
+  td.textContent = message;
+
+  tr.appendChild(td);
+  tbody.appendChild(tr);
+}
+
+function makeCell(value,className="") {
+  const td = document.createElement("td");
+  td.textContent = value == null || value === ""
+    ? "—"
+    : String(value);
+
+  if(className) td.className = className;
+  return td;
+}
+
+function renderLeads(leads) {
+  tbody.replaceChildren();
+
+  if(!leads.length) {
+    showMessage("No matching leads found.");
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+
+  leads.forEach(lead => {
+    const tr = document.createElement("tr");
+
+    tr.appendChild(makeCell("#"+lead.id,"id-tag"));
+    tr.appendChild(makeCell(lead.name,"lead-name"));
+    tr.appendChild(makeCell(lead.phone));
+    tr.appendChild(makeCell(lead.email));
+
+    const statusTd = document.createElement("td");
+    const badge = document.createElement("span");
+
+    const status = String(lead.status || "Unknown");
+    const normalized = status.trim().toLowerCase();
+
+    badge.className = "status";
+
+    if(normalized === "in progress") {
+      badge.classList.add("progress");
+    }
+
+    if(normalized === "converted") {
+      badge.classList.add("converted");
+    }
+
+    badge.textContent = status;
+    statusTd.appendChild(badge);
+    tr.appendChild(statusTd);
+
+    fragment.appendChild(tr);
+  });
+
+  tbody.appendChild(fragment);
+}
+
+function updateStats(leads) {
+  const count = status => leads.filter(lead =>
+    String(lead.status || "")
+      .trim()
+      .toLowerCase() === status
+  ).length;
+
+  updateText("total",leads.length);
+  updateText("new",count("new"));
+  updateText("progress",count("in progress"));
+  updateText("converted",count("converted"));
+}
+
+function filterLeads() {
+  const query = search.value.trim().toLowerCase();
+
+  const filtered = allLeads.filter(lead =>
+    [
+      lead.id,
+      lead.name,
+      lead.phone,
+      lead.email,
+      lead.status
+    ].some(value =>
+      String(value ?? "").toLowerCase().includes(query)
+    )
+  );
+
+  renderLeads(filtered);
+}
+
+async function loadLeads() {
+  refresh.disabled = true;
+  refresh.textContent = "Loading...";
+
+  try {
+    const response = await fetch("/api/leads",{
+      credentials:"same-origin",
+      cache:"no-store",
+      headers:{
+        Accept:"application/json"
+      }
+    });
+
+    if(response.redirected) {
+      window.location.href = "/login";
+      return;
+    }
+
+    if(response.status === 401 || response.status === 403) {
+      window.location.href = "/login";
+      return;
+    }
+
+    if(!response.ok) {
+      throw new Error("Failed to retrieve leads");
+    }
+
+    const data = await response.json();
+
+    if(!data.success || !Array.isArray(data.leads)) {
+      throw new Error("Invalid API response");
+    }
+
+    allLeads = data.leads;
+
+    updateStats(allLeads);
+    filterLeads();
+
+    updateText("connectionText","Database Connected");
+
+  } catch(error) {
+    console.error("CRM dashboard:",error.message);
+    updateText("connectionText","Connection Unavailable");
+    showMessage("Unable to load leads. Please try again.");
+  } finally {
+    refresh.disabled = false;
+    refresh.textContent = "↻ Refresh";
+  }
+}
+
+search.addEventListener("input",filterLeads);
+refresh.addEventListener("click",loadLeads);
+
+loadLeads();
+</script>
+
+</body>
+</html>
