@@ -967,13 +967,16 @@ function renderMeta() {
 $("leadForm").addEventListener("submit",async e => {
   e.preventDefault();
 
-  const payload = {
-    name:$("leadName").value.trim(),
-    phone:$("phone").value.trim(),
-    email:$("email").value.trim(),
-    lead_source:$("leadSource").value,
-    form_name:$("campaign").value.trim()
-  };
+const payload = {
+  name: $("leadName").value.trim(),
+  company: $("company").value.trim(),
+  phone: $("phone").value.trim(),
+  email: $("email").value.trim(),
+  lead_source: $("leadSource").value,
+  assigned_to: $("assigned").value,
+  status: $("leadStatus").value,
+  form_name: $("campaign").value.trim()
+};
 
   if(!payload.phone && !payload.email) {
     message(
