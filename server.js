@@ -5,9 +5,12 @@ const { createClient } = require("@supabase/supabase-js");
 const path = require("path");
 
 const app = express();
+
+app.disable("x-powered-by");
 app.use(express.json({ limit: "300kb" }));
 
 const COOKIE_NAME = "dt_crm_session";
+const LEADS_TABLE = "LEADS 1";
 
 const SOURCES = [
   "Manual",
@@ -21,7 +24,30 @@ const SOURCES = [
   "Other"
 ];
 
+const STATUSES = [
+  "New",
+  "In Progress",
+  "Follow-up",
+  "Converted",
+  "Lost"
+];
+
+const LEAD_FIELDS = [
+  "id",
+  "name",
+  "phone",
+  "email",
+  "status",
+  "lead_source",
+  "form_name",
+  "company",
+  "assigned_to",
+  "client_id"
+].join(",");
+
+// ==========================================
 // SUPABASE CONNECTION
+// ==========================================
 
 function getSupabase(token) {
   const url = process.env.SUPABASE_URL;
@@ -32,7 +58,9 @@ function getSupabase(token) {
   }
 
   const options = {
-    realtime: { transport: WebSocket },
+    realtime: {
+      transport: WebSocket
+    },
     auth: {
       autoRefreshToken: false,
       persistSession: false,
@@ -51,19 +79,25 @@ function getSupabase(token) {
   return createClient(url, key, options);
 }
 
-// SESSION MANAGEMENT
+// ==========================================
+// SESSION COOKIE
+// ==========================================
 
 function getSessionToken(req) {
-  const item = (req.headers.cookie || "")
-    .split(";")
-    .map(s => s.trim())
-    .find(s => s.startsWith(COOKIE_NAME + "="));
+  const cookies = req.headers.cookie || "";
 
-  if (!item) return null;
+  const session = cookies
+    .split(";")
+    .map(item => item.trim())
+    .find(item =>
+      item.startsWith(COOKIE_NAME + "=")
+    );
+
+  if (!session) return null;
 
   try {
     return decodeURIComponent(
-      item.slice(COOKIE_NAME.length + 1)
+      session.slice(COOKIE_NAME.length + 1)
     );
   } catch {
     return null;
@@ -79,18 +113,73 @@ function clearSession(res) {
   });
 }
 
-// VERIFY ADMIN
+function authFailure(req, res, status, message) {
+  if (req.path.startsWith("/api/")) {
+    return res.status(status).json({
+      error: message
+    });
+  }
+
+  if (status === 401) {
+    return res.redirect("/login");
+  }
+
+  return res.status(status).send(message);
+}
+
+// ==========================================
+// SAME-ORIGIN PROTECTION
+// ==========================================
+
+function checkOrigin(req, res, next) {
+  if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
+    return next();
+  }
+
+  const origin = req.get("origin");
+
+  if (origin) {
+    try {
+      const parsed = new URL(origin);
+
+      if (parsed.host !== req.get("host") ||
+          parsed.protocol !== "https:") {
+        return res.status(403).json({
+          error: "Request origin not allowed."
+        });
+      }
+    } catch {
+      return res.status(403).json({
+        error: "Invalid request origin."
+      });
+    }
+  } else {
+    const fetchSite = req.get("sec-fetch-site");
+
+    if (fetchSite && !["same-origin", "none"].includes(fetchSite)) {
+      return res.status(403).json({
+        error: "Cross-site request blocked."
+      });
+    }
+  }
+
+  next();
+}
+
+app.use(checkOrigin);
+
+// ==========================================
+// ADMIN AUTHENTICATION
+// ==========================================
 
 async function verifyAdmin(req, res, next) {
   try {
     const token = getSessionToken(req);
 
     if (!token) {
-      return req.path.startsWith("/api/")
-        ? res.status(401).json({
-            error: "Please log in again."
-          })
-        : res.redirect("/login");
+      return authFailure(
+        req, res, 401, "Please log in again."
+      );
     }
 
     const supabase = getSupabase(token);
@@ -98,14 +187,12 @@ async function verifyAdmin(req, res, next) {
     const { data: userData, error: userError } =
       await supabase.auth.getUser(token);
 
-    if (userError || !userData.user) {
+    if (userError || !userData?.user) {
       clearSession(res);
 
-      return req.path.startsWith("/api/")
-        ? res.status(401).json({
-            error: "Session expired. Please log in."
-          })
-        : res.redirect("/login");
+      return authFailure(
+        req, res, 401, "Session expired."
+      );
     }
 
     const { data: roleData, error: roleError } =
@@ -116,22 +203,21 @@ async function verifyAdmin(req, res, next) {
         .single();
 
     if (roleError || roleData?.role !== "admin") {
-      return req.path.startsWith("/api/")
-        ? res.status(403).json({
-            error: "Admin permission required."
-          })
-        : res.status(403).send(
-            "Admin permission required."
-          );
+      return authFailure(
+        req, res, 403, "Admin permission required."
+      );
     }
 
     req.crmUser = userData.user;
-    req.crmSupabase = supabase;
+    req.supabase = supabase;
 
     next();
 
   } catch (error) {
-    console.error("Auth:", error.message);
+    console.error(
+      "Authentication error:",
+      error.message
+    );
 
     return res.status(503).json({
       error: "Authentication temporarily unavailable."
@@ -139,172 +225,163 @@ async function verifyAdmin(req, res, next) {
   }
 }
 
-// SAME-ORIGIN REQUEST CHECK
+// ==========================================
+// INPUT VALIDATION
+// ==========================================
 
-function sameOrigin(req, res, next) {
-  const origin = req.get("origin");
-  const host =
-    req.get("x-forwarded-host") || req.get("host");
-
-  if (origin) {
-    try {
-      if (new URL(origin).host !== host) {
-        return res.status(403).json({
-          error: "Invalid request origin."
-        });
-      }
-    } catch {
-      return res.status(403).json({
-        error: "Invalid request origin."
-      });
-    }
+function cleanText(value, maxLength) {
+  if (value === undefined || value === null) {
+    return "";
   }
 
-  next();
+  if (typeof value !== "string") {
+    throw new Error("Invalid text field.");
+  }
+
+  const text = value.trim();
+
+  if (text.length > maxLength) {
+    throw new Error(
+      `Text exceeds ${maxLength} characters.`
+    );
+  }
+
+  return text;
 }
 
-// VALIDATE LEAD DATA
+function validUUID(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    .test(value);
+}
 
-function cleanLead(raw) {
-  if (
-    !raw ||
-    typeof raw !== "object" ||
-    Array.isArray(raw)
-  ) {
-    return { error: "Invalid lead data." };
+function normalizeLead(input, options = {}) {
+  if (!input || typeof input !== "object" ||
+      Array.isArray(input)) {
+    throw new Error("Invalid lead information.");
   }
 
-  const name =
-    typeof raw.name === "string"
-      ? raw.name.trim()
-      : "";
+  const name = cleanText(input.name, 150);
+  const phone = cleanText(input.phone, 20);
+  const email = cleanText(input.email, 254)
+    .toLowerCase();
 
-  const phone =
-    typeof raw.phone === "string"
-      ? raw.phone.trim()
-      : "";
+  const company = cleanText(input.company, 200);
+  const assignedTo = cleanText(input.assigned_to, 150);
+  const formName = cleanText(input.form_name, 150);
 
-  const email =
-    typeof raw.email === "string"
-      ? raw.email.trim().toLowerCase()
-      : "";
+  const source = cleanText(
+    input.lead_source || "Manual", 80
+  );
 
-  const lead_source =
-    typeof raw.lead_source === "string"
-      ? raw.lead_source.trim()
-      : "Manual";
+  const status = cleanText(
+    input.status || "New", 50
+  );
 
-  const form_name =
-    typeof raw.form_name === "string"
-      ? raw.form_name.trim()
-      : "";
+  const clientId = cleanText(
+    input.client_id, 36
+  );
 
-  if (!name || name.length > 150) {
-    return {
-      error: "Customer name must be 1–150 characters."
-    };
+  if (!name) {
+    throw new Error("Customer name is required.");
   }
 
   if (!phone && !email) {
-    return {
-      error: "Phone or email is required."
-    };
+    throw new Error(
+      "Phone number or email is required."
+    );
   }
 
-  if (
-    phone &&
-    (
-      !/^[+0-9()\-\s]{7,20}$/.test(phone) ||
-      phone.replace(/\D/g, "").length < 7
-    )
-  ) {
-    return {
-      error: "Invalid phone number."
-    };
+  if (email &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error("Invalid email address.");
   }
 
-  if (
-    email &&
-    (
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
-      email.length > 254
-    )
-  ) {
-    return {
-      error: "Invalid email address."
-    };
+  if (!SOURCES.includes(source)) {
+    throw new Error("Invalid lead source.");
   }
 
-  if (!SOURCES.includes(lead_source)) {
-    return {
-      error: "Invalid lead source."
-    };
+  if (!STATUSES.includes(status)) {
+    throw new Error("Invalid lead status.");
   }
 
-  if (form_name.length > 150) {
-    return {
-      error: "Form name must be 150 characters or fewer."
-    };
+  if (clientId && !validUUID(clientId)) {
+    throw new Error("Invalid client ID.");
   }
 
   return {
-    lead: {
-      name,
-      phone: phone || null,
-      email: email || null,
-      lead_source,
-      form_name: form_name || null,
-      status: "New"
-    }
+    name,
+    phone: phone || null,
+    email: email || null,
+    company: company || null,
+    assigned_to: assignedTo || null,
+    lead_source: source,
+    form_name: formName || null,
+    status,
+    client_id: options.allowClientId && clientId
+      ? clientId
+      : null
   };
 }
 
-// DUPLICATE DETECTION
+// ==========================================
+// CLIENT ID VALIDATION
+// ==========================================
 
-function normalizedPhone(value) {
-  return String(value || "").replace(/\D/g, "");
-}
+async function validateClient(supabase, clientId) {
+  if (!clientId) return true;
 
-function duplicateKey(lead) {
-  return [
-    lead.phone && "p:" + normalizedPhone(lead.phone),
-    lead.email && "e:" + lead.email.toLowerCase()
-  ].filter(Boolean);
-}
+  const { data, error } = await supabase
+    .from("crm_clients")
+    .select("id")
+    .eq("id", clientId)
+    .maybeSingle();
 
-async function leadExists(db, lead) {
-  if (lead.email) {
-    const { data, error } = await db
-      .from("LEADS 1")
-      .select("id")
-      .eq("email", lead.email)
-      .limit(1);
-
-    if (error) throw error;
-    if (data.length) return true;
+  if (error) {
+    throw new Error(
+      "Client lookup failed. Check CRM client permissions."
+    );
   }
 
+  return Boolean(data);
+}
+
+// ==========================================
+// DUPLICATE CHECK
+// ==========================================
+
+async function findDuplicate(supabase, lead) {
   if (lead.phone) {
-    const { data, error } = await db
-      .from("LEADS 1")
+    const { data, error } = await supabase
+      .from(LEADS_TABLE)
       .select("id")
       .eq("phone", lead.phone)
       .limit(1);
 
     if (error) throw error;
-    if (data.length) return true;
+    if (data.length) return data[0];
   }
 
-  return false;
+  if (lead.email) {
+    const { data, error } = await supabase
+      .from(LEADS_TABLE)
+      .select("id")
+      .ilike("email", lead.email)
+      .limit(1);
+
+    if (error) throw error;
+    if (data.length) return data[0];
+  }
+
+  return null;
 }
 
-// HOMEPAGE
+// ==========================================
+// HOME / LOGIN
+// ==========================================
 
 app.get("/", (req, res) => {
   res.redirect("/login");
 });
-
-// LOGIN PAGE
 
 app.get("/login", (req, res) => {
   res.set("Cache-Control", "no-store");
@@ -314,9 +391,11 @@ app.get("/login", (req, res) => {
   );
 });
 
+// ==========================================
 // LOGIN API
+// ==========================================
 
-app.post("/api/login", sameOrigin, async (req, res) => {
+app.post("/api/login", async (req, res) => {
   res.set("Cache-Control", "no-store");
 
   const { email, password } = req.body || {};
@@ -333,8 +412,10 @@ app.post("/api/login", sameOrigin, async (req, res) => {
   }
 
   try {
+    const supabase = getSupabase();
+
     const { data, error } =
-      await getSupabase().auth.signInWithPassword({
+      await supabase.auth.signInWithPassword({
         email: email.trim(),
         password
       });
@@ -345,12 +426,11 @@ app.post("/api/login", sameOrigin, async (req, res) => {
       });
     }
 
-    const db = getSupabase(
-      data.session.access_token
-    );
+    const authenticatedSupabase =
+      getSupabase(data.session.access_token);
 
     const { data: roleData, error: roleError } =
-      await db
+      await authenticatedSupabase
         .from("crm_user_roles")
         .select("role")
         .eq("user_id", data.user.id)
@@ -370,11 +450,10 @@ app.post("/api/login", sameOrigin, async (req, res) => {
         secure: true,
         sameSite: "lax",
         path: "/",
-        maxAge:
-          Math.min(
-            data.session.expires_in || 3600,
-            3600
-          ) * 1000
+        maxAge: Math.min(
+          data.session.expires_in || 3600,
+          3600
+        ) * 1000
       }
     );
 
@@ -384,7 +463,7 @@ app.post("/api/login", sameOrigin, async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Login:", error.message);
+    console.error("Login error:", error.message);
 
     return res.status(503).json({
       error: "Login temporarily unavailable."
@@ -392,7 +471,9 @@ app.post("/api/login", sameOrigin, async (req, res) => {
   }
 });
 
-// PREMIUM DASHBOARD
+// ==========================================
+// DASHBOARD
+// ==========================================
 
 app.get("/dashboard", verifyAdmin, (req, res) => {
   res.set("Cache-Control", "no-store");
@@ -402,271 +483,392 @@ app.get("/dashboard", verifyAdmin, (req, res) => {
   );
 });
 
+// ==========================================
 // LOGOUT
+// ==========================================
 
-app.post("/logout", sameOrigin, (req, res) => {
+app.post("/logout", (req, res) => {
   clearSession(res);
   res.redirect("/login");
 });
 
+// ==========================================
 // GET ALL LEADS
+// ==========================================
 
 app.get("/api/leads", verifyAdmin, async (req, res) => {
   res.set("Cache-Control", "no-store");
 
   try {
     const all = [];
-    let from = 0;
     const pageSize = 500;
 
-    while (true) {
-      const { data, error } =
-        await req.crmSupabase
-          .from("LEADS 1")
-          .select(
-            "id,name,phone,email,status,lead_source,form_name"
-          )
-          .order("id", { ascending: false })
-          .range(from, from + pageSize - 1);
+    for (let start = 0; start < 10000; start += pageSize) {
+      const { data, error } = await req.supabase
+        .from(LEADS_TABLE)
+        .select(LEAD_FIELDS)
+        .order("id", { ascending: false })
+        .range(start, start + pageSize - 1);
 
       if (error) throw error;
 
       all.push(...data);
 
       if (data.length < pageSize) break;
-
-      from += pageSize;
-
-      if (from >= 10000) break;
     }
 
     return res.json({
       success: true,
       count: all.length,
-      leads: all,
-      truncated: all.length >= 10000
+      leads: all
     });
 
   } catch (error) {
-    console.error(
-      "Get leads:",
-      error.code || error.message
-    );
+    console.error("Lead fetch error:", error.message);
 
     return res.status(500).json({
-      error: "Unable to load leads."
+      error: "Unable to load leads. Check database columns and permissions."
     });
   }
 });
 
+// ==========================================
 // ADD NEW LEAD
+// ==========================================
 
-app.post(
-  "/api/leads",
-  sameOrigin,
+app.post("/api/leads", verifyAdmin, async (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  try {
+    const lead = normalizeLead(req.body);
+
+    const duplicate = await findDuplicate(
+      req.supabase, lead
+    );
+
+    if (duplicate) {
+      return res.status(409).json({
+        error: "A lead with this phone or email already exists.",
+        duplicate_id: duplicate.id
+      });
+    }
+
+    const { data, error } = await req.supabase
+      .from(LEADS_TABLE)
+      .insert(lead)
+      .select(LEAD_FIELDS)
+      .single();
+
+    if (error) throw error;
+
+    return res.status(201).json({
+      success: true,
+      message: "Lead added successfully.",
+      lead: data
+    });
+
+  } catch (error) {
+    if (error.message.startsWith("Invalid") ||
+        error.message.includes("required") ||
+        error.message.includes("exceeds")) {
+      return res.status(400).json({
+        error: error.message
+      });
+    }
+
+    console.error("Add lead error:", error.message);
+
+    return res.status(500).json({
+      error: "Unable to add lead."
+    });
+  }
+});
+
+// ==========================================
+// UPDATE EXISTING LEAD
+// ==========================================
+
+app.patch("/api/leads/:id", verifyAdmin, async (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  try {
+    const id = String(req.params.id);
+
+    if (!/^\d+$/.test(id)) {
+      return res.status(400).json({
+        error: "Invalid lead ID."
+      });
+    }
+
+    const { data: existing, error: findError } =
+      await req.supabase
+        .from(LEADS_TABLE)
+        .select(LEAD_FIELDS)
+        .eq("id", id)
+        .maybeSingle();
+
+    if (findError) throw findError;
+
+    if (!existing) {
+      return res.status(404).json({
+        error: "Lead not found."
+      });
+    }
+
+    const allowed = [
+      "name",
+      "phone",
+      "email",
+      "company",
+      "assigned_to",
+      "status",
+      "lead_source",
+      "form_name"
+    ];
+
+    const submitted = req.body || {};
+
+    if (!submitted ||
+        typeof submitted !== "object" ||
+        Array.isArray(submitted)) {
+      return res.status(400).json({
+        error: "Invalid update information."
+      });
+    }
+
+    const changes = {};
+
+    for (const key of allowed) {
+      if (Object.prototype.hasOwnProperty.call(
+        submitted, key
+      )) {
+        changes[key] = submitted[key];
+      }
+    }
+
+    if (!Object.keys(changes).length) {
+      return res.status(400).json({
+        error: "No editable fields provided."
+      });
+    }
+
+    const normalized = normalizeLead({
+      ...existing,
+      ...changes
+    });
+
+    const update = {};
+
+    for (const key of Object.keys(changes)) {
+      update[key] = normalized[key];
+    }
+
+    const { data, error } = await req.supabase
+      .from(LEADS_TABLE)
+      .update(update)
+      .eq("id", id)
+      .select(LEAD_FIELDS)
+      .single();
+
+    if (error) throw error;
+
+    return res.json({
+      success: true,
+      message: "Lead updated successfully.",
+      lead: data
+    });
+
+  } catch (error) {
+    if (error.message.startsWith("Invalid") ||
+        error.message.includes("required") ||
+        error.message.includes("exceeds")) {
+      return res.status(400).json({
+        error: error.message
+      });
+    }
+
+    console.error("Update lead error:", error.message);
+
+    return res.status(500).json({
+      error: "Unable to update lead."
+    });
+  }
+});
+
+// ==========================================
+// CSV IMPORT API
+// ==========================================
+
+app.post("/api/leads/import",
   verifyAdmin,
   async (req, res) => {
-    res.set("Cache-Control", "no-store");
 
-    const { lead, error } = cleanLead(req.body);
+  res.set("Cache-Control", "no-store");
 
-    if (error) {
-      return res.status(400).json({ error });
-    }
+  const incoming = req.body?.leads;
+
+  if (!Array.isArray(incoming) ||
+      incoming.length === 0 ||
+      incoming.length > 100) {
+    return res.status(400).json({
+      error: "Import between 1 and 100 leads."
+    });
+  }
+
+  const result = {
+    success: true,
+    imported: 0,
+    duplicates: 0,
+    invalid: 0,
+    failed: 0,
+    details: []
+  };
+
+  const seenPhones = new Set();
+  const seenEmails = new Set();
+
+  for (let index = 0; index < incoming.length; index++) {
+    const rowNumber = index + 1;
+
+    let lead;
 
     try {
-      if (
-        await leadExists(req.crmSupabase, lead)
-      ) {
-        return res.status(409).json({
-          error:
-            "A lead with this phone or email already exists."
-        });
-      }
-
-      const { error: insertError } =
-        await req.crmSupabase
-          .from("LEADS 1")
-          .insert(lead);
-
-      if (insertError) throw insertError;
-
-      return res.status(201).json({
-        success: true,
-        message: "Lead added successfully."
+      lead = normalizeLead(incoming[index]);
+    } catch (error) {
+      result.invalid++;
+      result.details.push({
+        row: rowNumber,
+        status: "invalid",
+        reason: error.message
       });
-
-    } catch (err) {
-      console.error(
-        "Add lead:",
-        err.code || err.message
-      );
-
-      return res.status(500).json({
-        error:
-          "Unable to add lead. Check table permissions and ID default."
-      });
+      continue;
     }
-  }
-);
-
-// IMPORT LEADS
-
-app.post(
-  "/api/leads/import",
-  sameOrigin,
-  verifyAdmin,
-  async (req, res) => {
-    res.set("Cache-Control", "no-store");
-
-    const rows = req.body?.leads;
 
     if (
-      !Array.isArray(rows) ||
-      rows.length < 1 ||
-      rows.length > 100
+      (lead.phone && seenPhones.has(lead.phone)) ||
+      (lead.email && seenEmails.has(lead.email))
     ) {
-      return res.status(400).json({
-        error:
-          "Import between 1 and 100 leads per batch."
+      result.duplicates++;
+      result.details.push({
+        row: rowNumber,
+        status: "duplicate_in_file"
+      });
+      continue;
+    }
+
+    if (lead.phone) seenPhones.add(lead.phone);
+    if (lead.email) seenEmails.add(lead.email);
+
+    try {
+      const duplicate = await findDuplicate(
+        req.supabase, lead
+      );
+
+      if (duplicate) {
+        result.duplicates++;
+        result.details.push({
+          row: rowNumber,
+          status: "duplicate_in_crm"
+        });
+        continue;
+      }
+
+      const { error } = await req.supabase
+        .from(LEADS_TABLE)
+        .insert(lead);
+
+      if (error) throw error;
+
+      result.imported++;
+
+    } catch (error) {
+      console.error(
+        "Import row error:",
+        rowNumber,
+        error.message
+      );
+
+      result.failed++;
+      result.details.push({
+        row: rowNumber,
+        status: "failed"
       });
     }
-
-    const results = {
-      success: true,
-      imported: 0,
-      duplicates: 0,
-      invalid: 0,
-      failed: 0,
-      details: []
-    };
-
-    const seen = new Set();
-
-    for (let i = 0; i < rows.length; i++) {
-      const { lead, error } = cleanLead(rows[i]);
-
-      if (error) {
-        results.invalid++;
-
-        results.details.push({
-          row: i + 1,
-          result: "Invalid",
-          reason: error
-        });
-
-        continue;
-      }
-
-      const keys = duplicateKey(lead);
-
-      if (
-        keys.some(key => seen.has(key))
-      ) {
-        results.duplicates++;
-
-        results.details.push({
-          row: i + 1,
-          result: "Duplicate",
-          reason: "Repeated in this batch"
-        });
-
-        continue;
-      }
-
-      try {
-        if (
-          await leadExists(req.crmSupabase, lead)
-        ) {
-          results.duplicates++;
-
-          results.details.push({
-            row: i + 1,
-            result: "Duplicate",
-            reason: "Already in CRM"
-          });
-
-          keys.forEach(key => seen.add(key));
-          continue;
-        }
-
-        const { error: insertError } =
-          await req.crmSupabase
-            .from("LEADS 1")
-            .insert(lead);
-
-        if (insertError) throw insertError;
-
-        keys.forEach(key => seen.add(key));
-
-        results.imported++;
-
-      } catch (err) {
-        console.error(
-          "Import row:",
-          i + 1,
-          err.code || err.message
-        );
-
-        results.failed++;
-
-        results.details.push({
-          row: i + 1,
-          result: "Failed",
-          reason: "Database rejected row"
-        });
-      }
-    }
-
-    return res.json(results);
   }
-);
 
-// SERVER HEALTH
+  return res.json(result);
+});
+
+// ==========================================
+// CLIENTS API
+// Admin-only, read-only for now.
+// ==========================================
+
+app.get("/api/clients", verifyAdmin, async (req, res) => {
+  try {
+    const { data, error } = await req.supabase
+      .from("crm_clients")
+      .select("id,name,client_type")
+      .order("name");
+
+    if (error) throw error;
+
+    return res.json({
+      success: true,
+      clients: data
+    });
+
+  } catch (error) {
+    console.error("Client API:", error.message);
+
+    return res.status(500).json({
+      error: "Unable to load clients."
+    });
+  }
+});
+
+// ==========================================
+// HEALTH CHECK
+// ==========================================
 
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
-    application: "Digital TATSAT CRM"
+    application: "Digital TATSAT CRM",
+    version: "2.0"
   });
 });
 
+// ==========================================
 // DATABASE HEALTH
+// ==========================================
 
-app.get("/db-health", async (req, res) => {
-  if (
-    !process.env.SUPABASE_URL ||
-    !process.env.SUPABASE_ANON_KEY
-  ) {
-    return res.status(503).json({
-      database: "configuration_missing"
-    });
-  }
-
+app.get("/db-health", verifyAdmin, async (req, res) => {
   try {
-    const { error } = await getSupabase()
-      .from("LEADS 1")
-      .select("id", { head: true })
+    const { error } = await req.supabase
+      .from(LEADS_TABLE)
+      .select("id")
       .limit(1);
 
-    if (error) {
-      return res.status(503).json({
-        database: "connection_or_permission_error"
-      });
-    }
+    if (error) throw error;
 
     return res.json({
-      database: "supabase_api_reachable"
+      database: "connected",
+      lead_access: "verified"
     });
 
-  } catch (err) {
+  } catch (error) {
+    console.error("DB health:", error.message);
+
     return res.status(503).json({
-      database: "connection_error"
+      database: "connection_or_permission_error"
     });
   }
 });
 
+// ==========================================
 // START SERVER
+// ==========================================
 
 const PORT = process.env.PORT || 3000;
 
