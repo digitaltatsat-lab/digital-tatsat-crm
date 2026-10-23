@@ -656,6 +656,131 @@ app.post(
   }
 );
 
+/* ==========================================
+   DIGITAL TATSAT CRM V4
+   EMPLOYEE DAILY ATTENDANCE HISTORY
+   ========================================== */
+
+app.get(
+  "/api/employee/attendance/history",
+  verifyEmployee,
+  async (req, res) => {
+    res.set("Cache-Control", "no-store");
+
+    try {
+      const employeeId = req.crmUser.id;
+
+      // Get today's date in Indian Standard Time
+      const parts = new Intl.DateTimeFormat(
+        "en-GB",
+        {
+          timeZone: "Asia/Kolkata",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit"
+        }
+      ).formatToParts(new Date());
+
+      const datePart = (type) =>
+        parts.find(p => p.type === type).value;
+
+      const today =
+        `${datePart("year")}-` +
+        `${datePart("month")}-` +
+        `${datePart("day")}`;
+
+      const start = new Date(
+        `${today}T00:00:00+05:30`
+      );
+
+      const end = new Date(
+        start.getTime() + 86400000
+      );
+
+      const { data, error } = await req.supabase
+        .from("crm_employee_sessions")
+        .select("id,login_at,logout_at")
+        .eq("employee_id", employeeId)
+        .gte("login_at", start.toISOString())
+        .lt("login_at", end.toISOString())
+        .order("login_at", {
+          ascending: false
+        });
+
+      if (error) throw error;
+
+      let totalSeconds = 0;
+      const now = Date.now();
+
+      const sessions = (data || []).map(
+        (item) => {
+          const loginTime = Date.parse(
+            item.login_at
+          );
+
+          const logoutTime = item.logout_at
+            ? Date.parse(item.logout_at)
+            : now;
+
+          const duration = (
+            Number.isFinite(loginTime) &&
+            Number.isFinite(logoutTime)
+          )
+            ? Math.max(
+                0,
+                Math.floor(
+                  (logoutTime - loginTime) / 1000
+                )
+              )
+            : 0;
+
+          totalSeconds += duration;
+
+          return {
+            id: item.id,
+            login_at: item.login_at,
+            logout_at: item.logout_at,
+            duration_seconds: duration,
+            status: item.logout_at
+              ? "Completed"
+              : "Active"
+          };
+        }
+      );
+
+      return res.json({
+        success: true,
+        date: today,
+        timezone: "Asia/Kolkata",
+        total_sessions: sessions.length,
+        total_seconds: totalSeconds,
+        total_minutes: Math.floor(
+          totalSeconds / 60
+        ),
+        total_hours: Number(
+          (totalSeconds / 3600).toFixed(2)
+        ),
+        sessions: sessions
+      });
+
+    } catch (error) {
+      console.error(
+        "Attendance history error:",
+        error.message
+      );
+
+      return res.status(500).json({
+        success: false,
+        error: "Unable to load attendance history."
+      });
+    }
+  }
+);
+
+/* ==========================================
+   END OF ATTENDANCE HISTORY
+   ========================================== */
+
 // =====================================
 // LOGOUT
 // =====================================
