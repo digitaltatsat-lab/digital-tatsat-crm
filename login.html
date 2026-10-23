@@ -2,462 +2,315 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Digital TATSAT | CRM Login</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Montserrat:wght@500;600;700;800&display=swap');
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Digital TATSAT CRM</title>
 
-  :root {
-    --navy: #071426;
-    --blue: #102b52;
-    --accent: #5aa9ff;
-    --text: #14243d;
-  }
-
-  * { box-sizing: border-box; }
-
-  body {
-    margin: 0;
-    min-height: 100vh;
-    font-family: 'DM Sans', Arial, sans-serif;
-    background: var(--navy);
-    color: white;
-  }
-
-  .page {
-    position: relative;
-    display: grid;
-    grid-template-columns: 1.12fr 0.88fr;
-    min-height: 100vh;
-    overflow: hidden;
-    isolation: isolate;
-  }
-
-  /* White graph-paper grid */
-  .page::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -2;
-    background-image:
-      linear-gradient(rgba(255,255,255,.065) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,.065) 1px, transparent 1px);
-    background-size: 48px 48px;
-    mask-image: linear-gradient(to right, black 10%, transparent 95%);
-    pointer-events: none;
-  }
-
-  .page::after {
-    content: "";
-    position: absolute;
-    z-index: -1;
-    width: 750px;
-    height: 750px;
-    left: -200px;
-    bottom: -400px;
-    background: radial-gradient(circle,
-      rgba(36,115,230,.25), transparent 68%);
-    pointer-events: none;
-  }
-
-  .left {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 48px 8%;
-    position: relative;
-  }
-
-  .logo {
-    font-family: Montserrat, sans-serif;
-    font-size: 22px;
-    font-weight: 800;
-    letter-spacing: -.5px;
-  }
-
-  .logo span { color: #73b6ff; }
-
-  .tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    width: fit-content;
-    padding: 10px 15px;
-    border: 1px solid rgba(255,255,255,.16);
-    background: rgba(255,255,255,.045);
-    border-radius: 100px;
-    font-size: 12px;
-    color: #b8d7ff;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-
-  .dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: #70e0ba;
-    box-shadow: 0 0 15px #70e0ba;
-  }
-
-  .hero h1 {
-    max-width: 650px;
-    margin: 26px 0;
-    font-family: Montserrat, sans-serif;
-    font-size: clamp(38px, 4.4vw, 70px);
-    line-height: 1.12;
-    letter-spacing: -2px;
-    font-weight: 800;
-  }
-
-  .hero h1 span {
-    background: linear-gradient(100deg,#ffffff,#78baff);
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
-  }
-
-  .hero p {
-    max-width: 500px;
-    color: #a8b9d2;
-    font-size: 16px;
-    line-height: 1.8;
-  }
-
-  .graph {
-    width: 100%;
-    max-width: 550px;
-    margin-top: 30px;
-    padding: 20px;
-    border: 1px solid rgba(255,255,255,.13);
-    border-radius: 18px;
-    background: rgba(255,255,255,.035);
-    backdrop-filter: blur(10px);
-  }
-
-  .graph-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: #e1eaff;
-    font-size: 13px;
-    margin-bottom: 15px;
-  }
-
-  .graph-header small { color: #86dcb7; }
-
-  .graph svg { width: 100%; height: auto; display: block; }
-
-  .copyright {
-    color: #6e85a5;
-    font-size: 12px;
-    margin-top: 35px;
-  }
-
-  .right {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 36px;
-    background: linear-gradient(135deg,
-      rgba(15,38,71,.72),
-      rgba(4,13,28,.85));
-    border-left: 1px solid rgba(255,255,255,.09);
-  }
-
-  .login-card {
-    width: 100%;
-    max-width: 430px;
-    padding: 44px 38px;
-    border-radius: 24px;
-    background: #fff;
-    color: var(--text);
-    box-shadow: 0 35px 100px rgba(0,0,0,.35);
-  }
-
-  .card-icon {
-    display: grid;
-    place-items: center;
-    width: 52px;
-    height: 52px;
-    border-radius: 15px;
-    background: #eaf2ff;
-    color: var(--blue);
-    font-size: 25px;
-    margin-bottom: 25px;
-  }
-
-  .login-card h2 {
-    margin: 0;
-    font-family: Montserrat, sans-serif;
-    font-size: 27px;
-    letter-spacing: -.8px;
-  }
-
-  .description {
-    margin: 10px 0 32px;
-    color: #718096;
-    font-size: 14px;
-    line-height: 1.6;
-  }
-
-  label {
-    display: block;
-    margin: 0 0 9px;
-    font-size: 13px;
-    font-weight: 700;
-    color: #34445c;
-  }
-
-  input {
-    width: 100%;
-    padding: 15px;
-    border: 1px solid #dce4ee;
-    border-radius: 11px;
-    background: #f8fafd;
-    font: inherit;
-    font-size: 14px;
-    color: #14243d;
-    transition: .2s;
-  }
-
-  input:focus {
-    outline: none;
-    background: white;
-    border-color: #377cda;
-    box-shadow: 0 0 0 4px rgba(55,124,218,.10);
-  }
-
-  .field { margin-bottom: 22px; }
-
-  .password-wrap { position: relative; }
-  .password-wrap input { padding-right: 75px; }
-
-  .toggle {
-    position: absolute;
-    top: 50%;
-    right: 12px;
-    transform: translateY(-50%);
-    border: 0;
-    background: none;
-    color: #377cda;
-    font-weight: 700;
-    cursor: pointer;
-  }
-
-  .submit {
-    width: 100%;
-    padding: 16px;
-    margin-top: 8px;
-    border: 0;
-    border-radius: 11px;
-    background: linear-gradient(110deg,#102b52,#2459a0);
-    color: white;
-    font: inherit;
-    font-weight: 700;
-    font-size: 15px;
-    cursor: pointer;
-    box-shadow: 0 9px 22px rgba(16,43,82,.22);
-    transition: transform .2s;
-  }
-
-  .submit:hover { transform: translateY(-2px); }
-  .submit:disabled { opacity: .6; cursor: wait; }
-
-  #message {
-    min-height: 22px;
-    margin-top: 18px;
-    font-size: 13px;
-    color: #b42318;
-    text-align: center;
-  }
-
-  .secure {
-    margin-top: 25px;
-    padding-top: 20px;
-    border-top: 1px solid #edf0f4;
-    text-align: center;
-    font-size: 12px;
-    color: #8b98aa;
-  }
-
-  @media (max-width: 850px) {
-    .page { grid-template-columns: 1fr; }
-    .left { padding: 28px 24px; gap: 25px; }
-    .hero h1 { font-size: 34px; letter-spacing: -1px; }
-    .hero p { font-size: 14px; }
-    .graph { display: none; }
-    .copyright { display: none; }
-    .right {
-      border-left: 0;
-      background: transparent;
-      padding: 15px 20px 35px;
+  <style>
+    :root {
+      --navy: #10294d;
+      --blue: #2463eb;
+      --background: #f4f7fc;
+      --text: #182b46;
+      --muted: #6a7890;
+      --border: #dce4ef;
     }
-    .login-card { padding: 32px 25px; }
-  }
-</style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: var(--background);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: var(--text);
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 430px;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px;
+      box-shadow: 0 15px 45px rgba(16,41,77,.08);
+    }
+
+    .brand {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      color: var(--navy);
+      font-size: 28px;
+      font-weight: 800;
+    }
+
+    .brand p {
+      color: var(--muted);
+      font-size: 14px;
+      margin: 10px 0 0;
+    }
+
+    h2 {
+      font-size: 21px;
+      margin: 0 0 8px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 26px;
+      line-height: 1.6;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .field {
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(36,99,235,.1);
+    }
+
+    .password-box {
+      position: relative;
+    }
+
+    .password-box input {
+      padding-right: 75px;
+    }
+
+    .toggle {
+      position: absolute;
+      right: 8px;
+      top: 7px;
+      border: none;
+      background: #eef3ff;
+      color: var(--navy);
+      border-radius: 6px;
+      padding: 7px 10px;
+      cursor: pointer;
+    }
+
+    .login-button {
+      width: 100%;
+      background: var(--blue);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .login-button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    .message {
+      min-height: 22px;
+      margin: 15px 0;
+      font-size: 13px;
+      color: #c62828;
+      text-align: center;
+    }
+
+    .footer {
+      margin-top: 25px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 480px) {
+      .login-card {
+        padding: 25px;
+      }
+    }
+  </style>
 </head>
+
 <body>
-<div class="page">
 
-  <section class="left">
-    <div class="logo">DIGITAL <span>TATSAT</span></div>
+  <div class="login-card">
 
-    <div class="hero">
-      <div class="tag">
-        <span class="dot"></span>
-        Sales Intelligence Platform
-      </div>
-
-      <h1>
-        Your business.<br>
-        <span>One powerful CRM.</span>
-      </h1>
-
-      <p>
-        Manage leads, organize your pipeline,
-        track follow-ups and empower your sales team
-        from one intelligent workspace.
-      </p>
-
-      <div class="graph">
-        <div class="graph-header">
-          <strong>Performance Overview</strong>
-          <small>Illustrative preview</small>
-        </div>
-
-        <svg viewBox="0 0 500 170" role="img"
-             aria-label="Decorative upward trending graph">
-          <defs>
-            <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#4e9dff"
-                    stop-opacity=".35"/>
-              <stop offset="100%" stop-color="#4e9dff"
-                    stop-opacity="0"/>
-            </linearGradient>
-          </defs>
-
-          <g stroke="#ffffff" stroke-opacity=".10">
-            <path d="M0 30H500 M0 70H500 M0 110H500 M0 150H500"/>
-            <path d="M50 0V170 M150 0V170 M250 0V170 M350 0V170 M450 0V170"/>
-          </g>
-
-          <path d="M0 140 L70 125 L130 134 L200 92
-                   L260 106 L330 65 L390 80 L450 30
-                   L500 20 L500 170 L0 170 Z"
-                fill="url(#area)"/>
-
-          <path d="M0 140 L70 125 L130 134 L200 92
-                   L260 106 L330 65 L390 80 L450 30
-                   L500 20"
-                fill="none" stroke="#69b3ff"
-                stroke-width="3.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"/>
-
-          <circle cx="450" cy="30" r="6" fill="#69b3ff"
-                  stroke="#ffffff" stroke-width="2"/>
-        </svg>
-      </div>
+    <div class="brand">
+      <h1>Digital TATSAT</h1>
+      <p>Customer Relationship Management</p>
     </div>
 
-    <div class="copyright">
-      © 2026 Digital TATSAT. All rights reserved.
-    </div>
-  </section>
+    <h2>Welcome Back</h2>
 
-  <section class="right">
-    <div class="login-card">
-      <div class="card-icon">✦</div>
+    <p class="subtitle">
+      Sign in to access your CRM dashboard.
+      Admin and employee accounts are supported.
+    </p>
 
-      <h2>Welcome back</h2>
-      <p class="description">
-        Sign in to access your Digital TATSAT workspace.
-      </p>
+    <form id="loginForm">
 
-      <form id="loginForm">
-        <div class="field">
-          <label for="email">Work Email</label>
-          <input id="email" type="email"
-                 autocomplete="username"
-                 placeholder="Enter your email address"
-                 required>
-        </div>
-
-        <div class="field">
-          <label for="password">Password</label>
-          <div class="password-wrap">
-            <input id="password" type="password"
-                   autocomplete="current-password"
-                   placeholder="Enter your password"
-                   required>
-            <button type="button" class="toggle"
-                    id="togglePassword">Show</button>
-          </div>
-        </div>
-
-        <button type="submit" class="submit"
-                id="loginButton">
-          Sign In to Dashboard →
-        </button>
-      </form>
-
-      <div id="message" role="alert"></div>
-
-      <div class="secure">
-        🔒 Secure access · Authorized staff only
+      <div class="field">
+        <label for="email">Email Address</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          placeholder="Enter your email"
+          autocomplete="username"
+          required
+        >
       </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+
+        <div class="password-box">
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+            required
+          >
+
+          <button
+            type="button"
+            class="toggle"
+            id="togglePassword">
+            Show
+          </button>
+        </div>
+      </div>
+
+      <button
+        type="submit"
+        class="login-button"
+        id="loginButton">
+        Sign In
+      </button>
+
+      <div
+        class="message"
+        id="message"
+        role="alert"
+        aria-live="polite">
+      </div>
+
+    </form>
+
+    <div class="footer">
+      Digital TATSAT CRM V4
+      <p>Secure Admin & Employee Access</p>
     </div>
-  </section>
 
-</div>
+  </div>
 
-<script>
-  const passwordInput = document.getElementById("password");
+  <script>
+    "use strict";
 
-  document.getElementById("togglePassword")
-    .addEventListener("click", function () {
+    const passwordInput =
+      document.getElementById("password");
+
+    const togglePassword =
+      document.getElementById("togglePassword");
+
+    const loginForm =
+      document.getElementById("loginForm");
+
+    const loginButton =
+      document.getElementById("loginButton");
+
+    const message =
+      document.getElementById("message");
+
+    togglePassword.addEventListener("click", function () {
       const visible = passwordInput.type === "text";
-      passwordInput.type = visible ? "password" : "text";
-      this.textContent = visible ? "Show" : "Hide";
+
+      passwordInput.type = visible
+        ? "password"
+        : "text";
+
+      this.textContent = visible
+        ? "Show"
+        : "Hide";
     });
 
-  document.getElementById("loginForm")
-    .addEventListener("submit", async function (event) {
+    loginForm.addEventListener("submit", async function (event) {
       event.preventDefault();
 
-      const button = document.getElementById("loginButton");
-      const message = document.getElementById("message");
-
-      button.disabled = true;
-      message.textContent = "Signing in...";
+      loginButton.disabled = true;
+      loginButton.textContent = "Signing in...";
+      message.textContent = "";
 
       try {
         const response = await fetch("/api/login", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json"
+          },
           credentials: "same-origin",
           body: JSON.stringify({
-            email: document.getElementById("email").value,
+            email: document.getElementById("email").value.trim(),
             password: passwordInput.value
           })
         });
 
         const result = await response.json();
 
-        if (!response.ok) {
-          throw new Error(result.message || "Login failed");
+        if (!response.ok || !result.success) {
+          throw new Error(
+            result.error ||
+            result.message ||
+            "Login failed."
+          );
         }
 
-    window.location.assign(result.redirect);
+        if (
+          result.redirect !== "/dashboard" &&
+          result.redirect !== "/employee-dashboard"
+        ) {
+          throw new Error("Invalid dashboard redirect.");
+        }
+
+        window.location.assign(result.redirect);
+
       } catch (error) {
         message.textContent =
-          "Sign-in unavailable or credentials incorrect.";
+          error.message || "Unable to sign in.";
+
       } finally {
-        button.disabled = false;
+        loginButton.disabled = false;
+        loginButton.textContent = "Sign In";
       }
     });
-</script>
+  </script>
+
 </body>
 </html>
