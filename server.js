@@ -523,6 +523,139 @@ app.get(
   }
 );
 
+/* =====================================
+   EMPLOYEE ATTENDANCE V4
+   Clock In / Clock Out / Status
+   ===================================== */
+
+const ATTENDANCE_TABLE = "crm_employee_sessions";
+
+async function getOpenAttendance(req) {
+  const { data, error } = await req.supabase
+    .from(ATTENDANCE_TABLE)
+    .select("id,employee_id,login_at,logout_at")
+    .eq("employee_id", req.crmUser.id)
+    .is("logout_at", null)
+    .order("login_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+// Today's current attendance status
+app.get(
+  "/api/employee/attendance",
+  verifyEmployee,
+  async (req, res) => {
+    res.set("Cache-Control", "no-store");
+
+    try {
+      const session = await getOpenAttendance(req);
+
+      return res.json({
+        success: true,
+        clocked_in: Boolean(session),
+        session: session || null
+      });
+    } catch (error) {
+      console.error("Attendance status:", error.message);
+      return res.status(500).json({
+        error: "Unable to load attendance."
+      });
+    }
+  }
+);
+
+// Employee Clock In
+app.post(
+  "/api/employee/clock-in",
+  verifyEmployee,
+  async (req, res) => {
+    try {
+      const existing = await getOpenAttendance(req);
+
+      if (existing) {
+        return res.status(409).json({
+          success: false,
+          error: "You are already clocked in.",
+          session: existing
+        });
+      }
+
+      const { data, error } = await req.supabase
+        .from(ATTENDANCE_TABLE)
+        .insert({
+          employee_id: req.crmUser.id
+        })
+        .select("id,employee_id,login_at,logout_at")
+        .single();
+
+      if (error) throw error;
+
+      return res.status(201).json({
+        success: true,
+        message: "Clock-in successful.",
+        session: data
+      });
+    } catch (error) {
+      console.error("Clock in:", error.message);
+      return res.status(500).json({
+        error: "Unable to clock in."
+      });
+    }
+  }
+);
+
+// Employee Clock Out
+app.post(
+  "/api/employee/clock-out",
+  verifyEmployee,
+  async (req, res) => {
+    try {
+      const existing = await getOpenAttendance(req);
+
+      if (!existing) {
+        return res.status(409).json({
+          success: false,
+          error: "No active attendance session."
+        });
+      }
+
+      const { data, error } = await req.supabase
+        .from(ATTENDANCE_TABLE)
+        .update({
+          logout_at: new Date().toISOString()
+        })
+        .eq("id", existing.id)
+        .eq("employee_id", req.crmUser.id)
+        .is("logout_at", null)
+        .select("id,employee_id,login_at,logout_at")
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
+        return res.status(409).json({
+          error: "Attendance session already closed."
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: "Clock-out successful.",
+        session: data
+      });
+    } catch (error) {
+      console.error("Clock out:", error.message);
+      return res.status(500).json({
+        error: "Unable to clock out."
+      });
+    }
+  }
+);
+
 // =====================================
 // LOGOUT
 // =====================================
