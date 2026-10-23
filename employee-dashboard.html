@@ -1,0 +1,286 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+  <title>Employee Dashboard | Digital TATSAT</title>
+  <style>
+    :root {
+      --navy: #10294d;
+      --blue: #2463eb;
+      --bg: #f4f7fc;
+      --white: #ffffff;
+      --text: #182b46;
+      --muted: #6a7890;
+      --border: #e1e7f0;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      background: var(--navy);
+      color: white;
+      padding: 18px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    header h1 {
+      font-size: 21px;
+      margin: 0;
+    }
+
+    header p {
+      font-size: 12px;
+      color: #c9d8ee;
+      margin: 5px 0 0;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 11px 17px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .logout {
+      background: #ffffff;
+      color: var(--navy);
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 30px auto;
+      padding: 0 18px;
+    }
+
+    .welcome {
+      margin-bottom: 25px;
+    }
+
+    .welcome h2 {
+      margin: 0 0 7px;
+      font-size: 25px;
+    }
+
+    .welcome p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns:
+        repeat(auto-fit, minmax(210px, 1fr));
+      gap: 18px;
+      margin-bottom: 25px;
+    }
+
+    .card, .panel {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 23px;
+      box-shadow: 0 4px 15px rgba(20,40,70,.04);
+    }
+
+    .card span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .card strong {
+      display: block;
+      font-size: 28px;
+      margin-top: 12px;
+      color: var(--navy);
+    }
+
+    .panel {
+      margin-bottom: 20px;
+    }
+
+    .panel h3 {
+      margin-top: 0;
+    }
+
+    .panel p {
+      line-height: 1.7;
+      color: var(--muted);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .primary {
+      background: var(--blue);
+      color: white;
+    }
+
+    .secondary {
+      background: #eaf0ff;
+      color: var(--navy);
+    }
+
+    .notice {
+      background: #eef4ff;
+      border-left: 4px solid var(--blue);
+      padding: 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #36537e;
+      margin-top: 20px;
+    }
+
+    .status {
+      display: inline-block;
+      background: #e6f7ee;
+      color: #187245;
+      border-radius: 20px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      padding: 25px;
+      font-size: 12px;
+    }
+
+    @media (max-width: 600px) {
+      header { padding: 17px; }
+      main { margin-top: 20px; }
+      .welcome h2 { font-size: 21px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div>
+      <h1>Digital TATSAT</h1>
+      <p>Employee CRM Dashboard | Version 4</p>
+    </div>
+
+    <form method="POST" action="/logout">
+      <button class="logout" type="submit">
+        Logout
+      </button>
+    </form>
+  </header>
+
+  <main>
+    <section class="welcome">
+      <h2>Welcome to Your Dashboard</h2>
+      <p>
+        Manage your daily sales activities,
+        attendance and customer follow-ups.
+      </p>
+    </section>
+
+    <section class="cards">
+      <div class="card">
+        <span>Login Hours</span>
+        <strong id="loginHours">--</strong>
+      </div>
+
+      <div class="card">
+        <span>Active CRM Hours</span>
+        <strong id="activeHours">--</strong>
+      </div>
+
+      <div class="card">
+        <span>Idle Hours</span>
+        <strong id="idleHours">--</strong>
+      </div>
+
+      <div class="card">
+        <span>Calls Logged</span>
+        <strong id="callsLogged">--</strong>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3>Employee Attendance</h3>
+      <span class="status">
+        Dashboard Preview
+      </span>
+
+      <p>
+        Your login time, active CRM time,
+        idle time and break duration will
+        appear here after attendance tracking
+        is connected to the backend.
+      </p>
+
+      <div class="actions">
+        <button class="primary"
+                type="button" disabled>
+          Start Break (Coming Soon)
+        </button>
+
+        <button class="secondary"
+                type="button" disabled>
+          End Break (Coming Soon)
+        </button>
+      </div>
+
+      <div class="notice">
+        Attendance tracking is not active yet.
+        This page does not currently record
+        working hours or employee breaks.
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3>SIM-Based Calling</h3>
+      <p>
+        Your assigned leads, Call Now button,
+        call disposition, call descriptions,
+        and follow-up management will be
+        available in the next development phase.
+      </p>
+
+      <div class="notice">
+        Calls and dispositions are not yet
+        connected to the CRM database.
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3>Employee Productivity</h3>
+      <p>
+        Once enabled, this section will show
+        your daily calls, connected customers,
+        follow-ups and completed activities.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    Digital TATSAT CRM V4
+    | Employee Management System
+  </footer>
+
+</body>
+</html>
