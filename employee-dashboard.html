@@ -3,9 +3,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Employee Dashboard | Digital TATSAT</title>
+
   <style>
     :root {
       --navy: #10294d;
@@ -56,8 +56,13 @@
       font-weight: 600;
     }
 
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     .logout {
-      background: #ffffff;
+      background: white;
       color: var(--navy);
     }
 
@@ -90,7 +95,7 @@
     }
 
     .card, .panel {
-      background: var(--white);
+      background: white;
       border: 1px solid var(--border);
       border-radius: 13px;
       padding: 23px;
@@ -222,38 +227,46 @@
 
     <section class="panel">
       <h3>Employee Attendance</h3>
-      <span class="status">
-        Dashboard Preview
+
+      <span class="status" id="attendanceStatus">
+        Checking attendance...
       </span>
 
-      <p>
-        Your login time, active CRM time,
-        idle time and break duration will
-        appear here after attendance tracking
-        is connected to the backend.
+      <p id="attendanceDetails">
+        Loading your attendance session.
       </p>
 
       <div class="actions">
-        <button class="primary"
-                type="button" disabled>
-          Start Break (Coming Soon)
+        <button
+          class="primary"
+          id="clockInButton"
+          type="button"
+          disabled>
+          Clock In
         </button>
 
-        <button class="secondary"
-                type="button" disabled>
-          End Break (Coming Soon)
+        <button
+          class="secondary"
+          id="clockOutButton"
+          type="button"
+          disabled>
+          Clock Out
         </button>
       </div>
 
-      <div class="notice">
-        Attendance tracking is not active yet.
-        This page does not currently record
-        working hours or employee breaks.
+      <div
+        class="notice"
+        id="attendanceMessage"
+        role="status"
+        aria-live="polite">
+        Clock-in and clock-out are being tested.
+        Breaks and activity tracking are not enabled yet.
       </div>
     </section>
 
     <section class="panel">
       <h3>SIM-Based Calling</h3>
+
       <p>
         Your assigned leads, Call Now button,
         call disposition, call descriptions,
@@ -269,6 +282,7 @@
 
     <section class="panel">
       <h3>Employee Productivity</h3>
+
       <p>
         Once enabled, this section will show
         your daily calls, connected customers,
@@ -281,6 +295,200 @@
     Digital TATSAT CRM V4
     | Employee Management System
   </footer>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const inButton =
+        document.getElementById("clockInButton");
+
+      const outButton =
+        document.getElementById("clockOutButton");
+
+      const status =
+        document.getElementById("attendanceStatus");
+
+      const details =
+        document.getElementById("attendanceDetails");
+
+      const message =
+        document.getElementById("attendanceMessage");
+
+      const hours =
+        document.getElementById("loginHours");
+
+      let session = null;
+      let busy = false;
+      let loaded = false;
+
+      function showHours() {
+        if (!session || !session.login_at) {
+          hours.textContent = "--";
+          return;
+        }
+
+        const start = Date.parse(session.login_at);
+
+        const end = session.logout_at
+          ? Date.parse(session.logout_at)
+          : Date.now();
+
+        if (
+          !Number.isFinite(start) ||
+          !Number.isFinite(end)
+        ) {
+          hours.textContent = "--";
+          return;
+        }
+
+        const minutes = Math.max(
+          0,
+          Math.floor((end - start) / 60000)
+        );
+
+        hours.textContent =
+          `${Math.floor(minutes / 60)}h ` +
+          `${String(minutes % 60).padStart(2, "0")}m`;
+      }
+
+      function render() {
+        inButton.disabled =
+          busy || !loaded || Boolean(session);
+
+        outButton.disabled =
+          busy || !loaded || !session;
+
+        status.textContent = !loaded
+          ? "Attendance unavailable"
+          : session
+            ? "Clocked In"
+            : "Not Clocked In";
+
+        details.textContent = session
+          ? `Clocked in at ${
+              new Date(session.login_at).toLocaleString(
+                "en-IN",
+                { timeZone: "Asia/Kolkata" }
+              )
+            } (IST).`
+          : "You have no active attendance session.";
+
+        showHours();
+      }
+
+      async function request(url, method = "GET") {
+        const response = await fetch(url, {
+          method,
+          credentials: "same-origin",
+          headers: {
+            "Accept": "application/json"
+          },
+          cache: "no-store"
+        });
+
+        const data = await response.json()
+          .catch(() => ({}));
+
+        if (!response.ok || !data.success) {
+          throw new Error(
+            data.error ||
+            data.message ||
+            `Request failed (${response.status})`
+          );
+        }
+
+        return data;
+      }
+
+      async function refresh() {
+        busy = true;
+        render();
+
+        try {
+          const data = await request(
+            "/api/employee/attendance"
+          );
+
+          session = data.session || null;
+          loaded = true;
+
+          message.textContent =
+            "Attendance status loaded. " +
+            "Break and active/idle tracking " +
+            "are not enabled yet.";
+
+        } catch (error) {
+          loaded = false;
+
+          message.textContent =
+            `Attendance unavailable: ${error.message}`;
+
+        } finally {
+          busy = false;
+          render();
+        }
+      }
+
+      async function changeAttendance(endpoint) {
+        if (busy || !loaded) return;
+
+        busy = true;
+        render();
+
+        try {
+          const data = await request(endpoint, "POST");
+
+          session = endpoint.endsWith("clock-out")
+            ? null
+            : data.session;
+
+          message.textContent =
+            data.message || "Attendance updated.";
+
+        } catch (error) {
+          message.textContent =
+            `Unable to update attendance: ${error.message}`;
+
+          try {
+            const current = await request(
+              "/api/employee/attendance"
+            );
+
+            session = current.session || null;
+            loaded = true;
+
+          } catch (_) {
+            loaded = false;
+          }
+
+        } finally {
+          busy = false;
+          render();
+        }
+      }
+
+      inButton.addEventListener(
+        "click",
+        () => changeAttendance(
+          "/api/employee/clock-in"
+        )
+      );
+
+      outButton.addEventListener(
+        "click",
+        () => changeAttendance(
+          "/api/employee/clock-out"
+        )
+      );
+
+      setInterval(() => {
+        if (session) showHours();
+      }, 30000);
+
+      refresh();
+    })();
+  </script>
 
 </body>
 </html>
