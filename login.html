@@ -2,315 +2,547 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login | Digital TATSAT CRM</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#070e1b">
+<title>Sign In | Digital TATSAT CRM</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #070e1b;
+  --navy: #0d1b32;
+  --panel: #101d32;
+  --line: rgba(169,194,231,.13);
+  --text: #f4f7ff;
+  --muted: #91a2bc;
+  --blue: #4285ff;
+  --blue2: #2563eb;
+}
 
-  <style>
-    :root {
-      --navy: #10294d;
-      --blue: #2463eb;
-      --background: #f4f7fc;
-      --text: #182b46;
-      --muted: #6a7890;
-      --border: #dce4ef;
-    }
+* { box-sizing: border-box; }
 
-    * {
-      box-sizing: border-box;
-    }
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: Arial, sans-serif;
-      background: var(--background);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      color: var(--text);
-    }
+.page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0,1.15fr) minmax(420px,.85fr);
+}
 
-    .login-card {
-      width: 100%;
-      max-width: 430px;
-      background: white;
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 36px;
-      box-shadow: 0 15px 45px rgba(16,41,77,.08);
-    }
+.visual {
+  position: relative;
+  overflow: hidden;
+  padding: 48px clamp(30px,5vw,85px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background:
+    radial-gradient(ellipse at 65% 55%,rgba(35,93,202,.19),transparent 50%),
+    linear-gradient(145deg,#081020,#0b1a33 70%,#070d19);
+}
 
-    .brand {
-      text-align: center;
-      margin-bottom: 30px;
-    }
+.visual::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(150,184,232,.07) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(150,184,232,.07) 1px,transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to right,transparent,black 25%,black 80%,transparent);
+  pointer-events: none;
+}
 
-    .brand h1 {
-      margin: 0;
-      color: var(--navy);
-      font-size: 28px;
-      font-weight: 800;
-    }
+.visual::after {
+  content: "";
+  position: absolute;
+  width: 480px;
+  height: 480px;
+  border: 1px solid rgba(92,149,255,.12);
+  border-radius: 50%;
+  right: -180px;
+  top: 20%;
+  box-shadow:
+    0 0 0 80px rgba(67,126,235,.025),
+    0 0 0 160px rgba(67,126,235,.018);
+  pointer-events: none;
+}
 
-    .brand p {
-      color: var(--muted);
-      font-size: 14px;
-      margin: 10px 0 0;
-    }
+.visual > * {
+  position: relative;
+  z-index: 1;
+}
 
-    h2 {
-      font-size: 21px;
-      margin: 0 0 8px;
-    }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
 
-    .subtitle {
-      color: var(--muted);
-      font-size: 13px;
-      margin-bottom: 26px;
-      line-height: 1.6;
-    }
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(130,176,255,.3);
+  border-radius: 13px;
+  background: linear-gradient(145deg,#214f9d,#10264c);
+  color: white;
+  font-weight: 800;
+  letter-spacing: -1px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.22);
+}
 
-    label {
-      display: block;
-      font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
+.brand-name {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -.4px;
+}
 
-    .field {
-      margin-bottom: 20px;
-    }
+.brand-caption {
+  margin-top: 4px;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #8fa8d0;
+}
 
-    input {
-      width: 100%;
-      padding: 13px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 14px;
-      outline: none;
-    }
+.hero {
+  max-width: 630px;
+  padding: 75px 0;
+}
 
-    input:focus {
-      border-color: var(--blue);
-      box-shadow: 0 0 0 3px rgba(36,99,235,.1);
-    }
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 13px;
+  border: 1px solid rgba(126,169,239,.22);
+  background: rgba(33,69,122,.19);
+  border-radius: 100px;
+  color: #b7cff6;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
 
-    .password-box {
-      position: relative;
-    }
+.dot {
+  width: 7px;
+  height: 7px;
+  background: #62a3ff;
+  border-radius: 50%;
+  box-shadow: 0 0 12px #4285ff;
+}
 
-    .password-box input {
-      padding-right: 75px;
-    }
+.hero h1 {
+  font-size: clamp(42px,5vw,75px);
+  letter-spacing: -3px;
+  line-height: 1.08;
+  font-weight: 750;
+  margin: 30px 0 24px;
+}
 
-    .toggle {
-      position: absolute;
-      right: 8px;
-      top: 7px;
-      border: none;
-      background: #eef3ff;
-      color: var(--navy);
-      border-radius: 6px;
-      padding: 7px 10px;
-      cursor: pointer;
-    }
+.hero h1 span {
+  background: linear-gradient(90deg,#fff,#80b3ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
 
-    .login-button {
-      width: 100%;
-      background: var(--blue);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 14px;
-      font-size: 15px;
-      font-weight: bold;
-      cursor: pointer;
-    }
+.hero p {
+  max-width: 450px;
+  color: #9dafca;
+  font-size: 16px;
+  line-height: 1.9;
+}
 
-    .login-button:disabled {
-      opacity: .6;
-      cursor: not-allowed;
-    }
+.features {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 38px;
+}
 
-    .message {
-      min-height: 22px;
-      margin: 15px 0;
-      font-size: 13px;
-      color: #c62828;
-      text-align: center;
-    }
+.feature {
+  border: 1px solid rgba(162,190,236,.15);
+  border-radius: 9px;
+  padding: 12px 15px;
+  background: rgba(255,255,255,.035);
+  color: #c4d2e8;
+  font-size: 12px;
+}
 
-    .footer {
-      margin-top: 25px;
-      text-align: center;
-      color: var(--muted);
-      font-size: 12px;
-    }
+.visual-footer {
+  color: #8193af;
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+}
 
-    @media (max-width: 480px) {
-      .login-card {
-        padding: 25px;
-      }
-    }
-  </style>
+.login-side {
+  background:
+    radial-gradient(circle at 50% 0%,rgba(44,90,160,.09),transparent 55%),
+    #090f1b;
+  border-left: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 45px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 46px 40px;
+  background: linear-gradient(160deg,rgba(22,37,61,.94),rgba(13,23,40,.98));
+  border: 1px solid rgba(157,187,230,.16);
+  border-radius: 20px;
+  box-shadow: 0 30px 75px rgba(0,0,0,.24);
+}
+
+.secure-label {
+  color: #92b8f4;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+}
+
+.login-card h2 {
+  margin: 0;
+  font-size: 32px;
+  letter-spacing: -1px;
+}
+
+.subtitle {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.8;
+  margin: 13px 0 35px;
+}
+
+.field {
+  margin-bottom: 23px;
+}
+
+label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 650;
+  color: #c8d6eb;
+}
+
+input {
+  width: 100%;
+  height: 52px;
+  padding: 0 15px;
+  border: 1px solid rgba(158,186,229,.18);
+  border-radius: 10px;
+  background: #0b172a;
+  color: white;
+  font-size: 14px;
+  outline: none;
+  transition: .2s;
+}
+
+input::placeholder {
+  color: #61738e;
+}
+
+input:focus {
+  border-color: #568ff1;
+  box-shadow: 0 0 0 3px rgba(66,133,255,.13);
+}
+
+.password-wrap {
+  position: relative;
+}
+
+.password-wrap input {
+  padding-right: 76px;
+}
+
+.show-button {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  height: 36px;
+  padding: 0 12px;
+  border: none;
+  background: #192c49;
+  color: #b9d1f5;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.signin {
+  width: 100%;
+  height: 52px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(110deg,#2563eb,#478dff);
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 12px 30px rgba(37,99,235,.19);
+}
+
+.signin:hover {
+  filter: brightness(1.1);
+}
+
+.signin:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.message {
+  min-height: 25px;
+  margin-top: 17px;
+  font-size: 13px;
+  text-align: center;
+  color: #ff9a9a;
+}
+
+.login-footer {
+  border-top: 1px solid var(--line);
+  margin-top: 30px;
+  padding-top: 25px;
+  color: #8093b0;
+  font-size: 12px;
+  text-align: center;
+  line-height: 1.8;
+}
+
+@media(max-width:900px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .visual {
+    padding: 25px;
+  }
+
+  .hero, .visual-footer {
+    display: none;
+  }
+
+  .login-side {
+    border-left: 0;
+    min-height: calc(100vh - 100px);
+    padding: 25px;
+  }
+}
+
+@media(max-width:480px) {
+  .login-side {
+    padding: 18px;
+  }
+
+  .login-card {
+    padding: 34px 23px;
+  }
+
+  .login-card h2 {
+    font-size: 28px;
+  }
+}
+</style>
 </head>
 
 <body>
+<div class="page">
 
-  <div class="login-card">
-
+  <section class="visual">
     <div class="brand">
-      <h1>Digital TATSAT</h1>
-      <p>Customer Relationship Management</p>
+      <div class="brand-mark">DT</div>
+      <div>
+        <div class="brand-name">Digital TATSAT</div>
+        <div class="brand-caption">CRM Workspace</div>
+      </div>
     </div>
 
-    <h2>Welcome Back</h2>
-
-    <p class="subtitle">
-      Sign in to access your CRM dashboard.
-      Admin and employee accounts are supported.
-    </p>
-
-    <form id="loginForm">
-
-      <div class="field">
-        <label for="email">Email Address</label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          placeholder="Enter your email"
-          autocomplete="username"
-          required
-        >
+    <div class="hero">
+      <div class="eyebrow">
+        <span class="dot"></span>
+        Digital TATSAT CRM V4
       </div>
 
-      <div class="field">
-        <label for="password">Password</label>
+      <h1>
+        Better relationships.<br>
+        <span>Smarter business.</span>
+      </h1>
 
-        <div class="password-box">
+      <p>
+        A centralized workspace for your leads,
+        customer relationships, team operations
+        and business growth.
+      </p>
+
+      <div class="features">
+        <div class="feature">Lead Management</div>
+        <div class="feature">Employee Workspace</div>
+        <div class="feature">Business Operations</div>
+      </div>
+    </div>
+
+    <div class="visual-footer">
+      <span>Digital TATSAT © 2026</span>
+      <span>CRM Version 4.0</span>
+    </div>
+  </section>
+
+  <section class="login-side">
+    <div class="login-card">
+      <div class="secure-label">
+        Secure Account Access
+      </div>
+
+      <h2>Welcome back.</h2>
+
+      <p class="subtitle">
+        Enter your credentials to access
+        your Digital TATSAT workspace.
+      </p>
+
+      <form id="loginForm">
+
+        <div class="field">
+          <label for="email">WORK EMAIL</label>
           <input
-            type="password"
-            id="password"
-            name="password"
-            placeholder="Enter your password"
-            autocomplete="current-password"
+            id="email"
+            type="email"
+            autocomplete="username"
+            placeholder="name@company.com"
             required
           >
-
-          <button
-            type="button"
-            class="toggle"
-            id="togglePassword">
-            Show
-          </button>
         </div>
+
+        <div class="field">
+          <label for="password">PASSWORD</label>
+          <div class="password-wrap">
+            <input
+              id="password"
+              type="password"
+              autocomplete="current-password"
+              placeholder="Enter your password"
+              required
+            >
+            <button
+              type="button"
+              id="togglePassword"
+              class="show-button">
+              Show
+            </button>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          class="signin"
+          id="loginButton">
+          Sign In to Workspace
+        </button>
+
+        <div
+          id="message"
+          class="message"
+          role="alert"
+          aria-live="polite">
+        </div>
+      </form>
+
+      <div class="login-footer">
+        Authorized Admin & Employee Access
+        <div>Digital TATSAT CRM V4</div>
       </div>
-
-      <button
-        type="submit"
-        class="login-button"
-        id="loginButton">
-        Sign In
-      </button>
-
-      <div
-        class="message"
-        id="message"
-        role="alert"
-        aria-live="polite">
-      </div>
-
-    </form>
-
-    <div class="footer">
-      Digital TATSAT CRM V4
-      <p>Secure Admin & Employee Access</p>
     </div>
+  </section>
 
-  </div>
+</div>
 
-  <script>
-    "use strict";
+<script>
+"use strict";
 
-    const passwordInput =
-      document.getElementById("password");
+const passwordInput =
+  document.getElementById("password");
 
-    const togglePassword =
-      document.getElementById("togglePassword");
+const togglePassword =
+  document.getElementById("togglePassword");
 
-    const loginForm =
-      document.getElementById("loginForm");
+const loginForm =
+  document.getElementById("loginForm");
 
-    const loginButton =
-      document.getElementById("loginButton");
+const loginButton =
+  document.getElementById("loginButton");
 
-    const message =
-      document.getElementById("message");
+const message =
+  document.getElementById("message");
 
-    togglePassword.addEventListener("click", function () {
-      const visible = passwordInput.type === "text";
+togglePassword.addEventListener("click", function () {
+  const visible = passwordInput.type === "text";
 
-      passwordInput.type = visible
-        ? "password"
-        : "text";
+  passwordInput.type = visible ? "password" : "text";
+  this.textContent = visible ? "Show" : "Hide";
+});
 
-      this.textContent = visible
-        ? "Show"
-        : "Hide";
+loginForm.addEventListener("submit", async function (event) {
+  event.preventDefault();
+
+  loginButton.disabled = true;
+  loginButton.textContent = "Signing in...";
+  message.textContent = "";
+
+  try {
+    const response = await fetch("/api/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      credentials: "same-origin",
+      body: JSON.stringify({
+        email: document.getElementById("email").value.trim(),
+        password: passwordInput.value
+      })
     });
 
-    loginForm.addEventListener("submit", async function (event) {
-      event.preventDefault();
+    const result = await response.json();
 
-      loginButton.disabled = true;
-      loginButton.textContent = "Signing in...";
-      message.textContent = "";
+    if (!response.ok || !result.success) {
+      throw new Error(
+        result.error ||
+        result.message ||
+        "Unable to sign in."
+      );
+    }
 
-      try {
-        const response = await fetch("/api/login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          credentials: "same-origin",
-          body: JSON.stringify({
-            email: document.getElementById("email").value.trim(),
-            password: passwordInput.value
-          })
-        });
+    if (
+      result.redirect !== "/dashboard" &&
+      result.redirect !== "/employee-dashboard"
+    ) {
+      throw new Error("Invalid dashboard redirect.");
+    }
 
-        const result = await response.json();
+    window.location.assign(result.redirect);
 
-        if (!response.ok || !result.success) {
-          throw new Error(
-            result.error ||
-            result.message ||
-            "Login failed."
-          );
-        }
-
-        if (
-          result.redirect !== "/dashboard" &&
-          result.redirect !== "/employee-dashboard"
-        ) {
-          throw new Error("Invalid dashboard redirect.");
-        }
-
-        window.location.assign(result.redirect);
-
-      } catch (error) {
-        message.textContent =
-          error.message || "Unable to sign in.";
-
-      } finally {
-        loginButton.disabled = false;
-        loginButton.textContent = "Sign In";
-      }
-    });
-  </script>
+  } catch (error) {
+    message.textContent =
+      error.message || "Sign-in unavailable.";
+  } finally {
+    loginButton.disabled = false;
+    loginButton.textContent = "Sign In to Workspace";
+  }
+});
+</script>
 
 </body>
 </html>
