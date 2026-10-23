@@ -450,7 +450,7 @@
           throw new Error(result.message || "Login failed");
         }
 
-       window.location.assign("/dashboard");
+    window.location.assign(result.redirect);
       } catch (error) {
         message.textContent =
           "Sign-in unavailable or credentials incorrect.";
