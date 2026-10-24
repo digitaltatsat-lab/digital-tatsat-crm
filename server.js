@@ -8,7 +8,10 @@ const app = express();
 app.disable("x-powered-by");
 app.use(express.json({ limit: "300kb" }));
 
+
 const COOKIE_NAME = "dt_crm_session";
+const REFRESH_COOKIE_NAME = "dt_crm_refresh";
+const REFRESH_COOKIE_AGE_MS = 12 * 60 * 60 * 1000;
 const LEADS_TABLE = "LEADS 1";
 
 const SOURCES = [
@@ -64,35 +67,77 @@ function getSupabase(token) {
 // COOKIE MANAGEMENT
 // =====================================
 
-function getSessionToken(req) {
+function getCookieValue(req, name) {
   const cookie = (req.headers.cookie || "")
     .split(";")
     .map(x => x.trim())
-    .find(x => x.startsWith(COOKIE_NAME + "="));
+    .find(x => x.startsWith(name + "="));
 
   if (!cookie) return null;
 
   try {
     return decodeURIComponent(
-      cookie.slice(COOKIE_NAME.length + 1)
+      cookie.slice(name.length + 1)
     );
   } catch {
     return null;
   }
 }
 
-function clearSession(res) {
-  res.clearCookie(COOKIE_NAME, {
-    path: "/",
+function getSessionToken(req) {
+  return getCookieValue(req, COOKIE_NAME);
+}
+
+function saveSession(res, session) {
+  const options = {
+    httpOnly: true,
     secure: true,
     sameSite: "lax",
-    httpOnly: true
-  });
+    path: "/"
+  };
+
+  res.cookie(
+    COOKIE_NAME,
+    session.access_token,
+    {
+      ...options,
+      maxAge: Math.max(
+        1,
+        Math.min(
+          session.expires_in || 3600,
+          3600
+        )
+      ) * 1000
+    }
+  );
+
+  res.cookie(
+    REFRESH_COOKIE_NAME,
+    session.refresh_token,
+    {
+      ...options,
+      maxAge: REFRESH_COOKIE_AGE_MS
+    }
+  );
+}
+
+function clearSession(res) {
+  const options = {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/"
+  };
+
+  res.clearCookie(COOKIE_NAME, options);
+  res.clearCookie(REFRESH_COOKIE_NAME, options);
 }
 
 function authFailure(req, res, status, message) {
-  if (req.path.startsWith("/api/") ||
-      req.path === "/db-health") {
+  if (
+    req.path.startsWith("/api/") ||
+    req.path === "/db-health"
+  ) {
     return res.status(status).json({
       error: message
     });
@@ -110,8 +155,10 @@ function authFailure(req, res, status, message) {
 // =====================================
 
 function checkOrigin(req, res, next) {
-  if (!["POST", "PUT", "PATCH", "DELETE"]
-      .includes(req.method)) {
+  if (
+    !["POST", "PUT", "PATCH", "DELETE"]
+      .includes(req.method)
+  ) {
     return next();
   }
 
@@ -137,8 +184,10 @@ function checkOrigin(req, res, next) {
   } else {
     const site = req.get("sec-fetch-site");
 
-    if (site &&
-        !["same-origin", "none"].includes(site)) {
+    if (
+      site &&
+      !["same-origin", "none"].includes(site)
+    ) {
       return res.status(403).json({
         error: "Cross-site request blocked."
       });
@@ -156,32 +205,76 @@ app.use(checkOrigin);
 
 async function verifyUser(req, res, next) {
   try {
-    const token = getSessionToken(req);
+    let token = getSessionToken(req);
 
-    if (!token) {
+    const refreshToken = getCookieValue(
+      req,
+      REFRESH_COOKIE_NAME
+    );
+
+    let user = null;
+
+    // Check existing access token
+    if (token) {
+      const check = await getSupabase()
+        .auth.getUser(token);
+
+      if (
+        !check.error &&
+        check.data?.user
+      ) {
+        user = check.data.user;
+      }
+    }
+
+    // Refresh expired session
+    if (!user && refreshToken) {
+      const refreshed = await getSupabase()
+        .auth.refreshSession({
+          refresh_token: refreshToken
+        });
+
+      if (
+        !refreshed.error &&
+        refreshed.data?.session
+      ) {
+        token = refreshed.data.session.access_token;
+
+        saveSession(
+          res,
+          refreshed.data.session
+        );
+
+        const check = await getSupabase()
+          .auth.getUser(token);
+
+        if (
+          !check.error &&
+          check.data?.user
+        ) {
+          user = check.data.user;
+        }
+      }
+    }
+
+    if (!user) {
+      clearSession(res);
+
       return authFailure(
-        req, res, 401, "Please log in again."
+        req,
+        res,
+        401,
+        "Please log in again."
       );
     }
 
     const supabase = getSupabase(token);
 
-    const { data: userData, error: userError } =
-      await supabase.auth.getUser(token);
-
-    if (userError || !userData?.user) {
-      clearSession(res);
-
-      return authFailure(
-        req, res, 401, "Session expired."
-      );
-    }
-
     const { data: roleData, error: roleError } =
       await supabase
         .from("crm_user_roles")
         .select("role")
-        .eq("user_id", userData.user.id)
+        .eq("user_id", user.id)
         .single();
 
     if (
@@ -189,19 +282,24 @@ async function verifyUser(req, res, next) {
       !["admin", "employee"].includes(roleData?.role)
     ) {
       return authFailure(
-        req, res, 403,
+        req,
+        res,
+        403,
         "CRM access not authorized."
       );
     }
 
-    req.crmUser = userData.user;
+    req.crmUser = user;
     req.crmRole = roleData.role;
     req.supabase = supabase;
 
     next();
 
   } catch (error) {
-    console.error("Authentication:", error.message);
+    console.error(
+      "Authentication:",
+      error.message
+    );
 
     return res.status(503).json({
       error: "Authentication temporarily unavailable."
@@ -213,7 +311,9 @@ function verifyAdmin(req, res, next) {
   verifyUser(req, res, () => {
     if (req.crmRole !== "admin") {
       return authFailure(
-        req, res, 403,
+        req,
+        res,
+        403,
         "Admin permission required."
       );
     }
@@ -226,7 +326,9 @@ function verifyEmployee(req, res, next) {
   verifyUser(req, res, () => {
     if (req.crmRole !== "employee") {
       return authFailure(
-        req, res, 403,
+        req,
+        res,
+        403,
         "Employee permission required."
       );
     }
@@ -234,6 +336,7 @@ function verifyEmployee(req, res, next) {
     next();
   });
 }
+
 
 // =====================================
 // INPUT VALIDATION
@@ -436,22 +539,7 @@ app.post("/api/login", async (req, res) => {
       });
     }
 
-    res.cookie(
-      COOKIE_NAME,
-      data.session.access_token,
-      {
-        httpOnly: true,
-        secure: true,
-        sameSite: "lax",
-        path: "/",
-        maxAge:
-          Math.min(
-            data.session.expires_in || 3600,
-            3600
-          ) * 1000
-      }
-    );
-
+  saveSession(res, data.session);
     return res.json({
       success: true,
       role: roleData.role,
