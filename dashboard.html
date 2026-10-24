@@ -288,7 +288,10 @@ td {
   </button>
   <button class="nav" data-tab="meta">
     ◉ Meta Ads Manager
-  </button>
+   </button>
+  <button class="nav" data-tab="monitoring">
+  ◉ Employee Monitoring
+</button>
   <button class="nav" data-tab="settings">
     ⚙ Settings
   </button>
@@ -547,6 +550,122 @@ td {
       </div>
     </div>
   </section>
+
+<!-- EMPLOYEE MONITORING -->
+<section id="monitoringSection" class="hidden">
+
+  <div class="hero">
+    <h2>Employee Monitoring</h2>
+    <p>Track employee login hours, active time, idle time and calls.</p>
+    <small>Digital TATSAT CRM V4</small>
+  </div>
+
+  <div class="panel">
+    <div class="flex">
+      <div>
+        <h2>Employee Performance</h2>
+        <p class="sub">View employee-wise CRM activity and attendance.</p>
+      </div>
+
+      <button class="btn blue" onclick="loadEmployeeMonitoring()">
+        Refresh Data
+      </button>
+    </div>
+
+    <div class="filters">
+      <select class="input" id="monitorEmployee"
+        onchange="renderEmployeeMonitoring()">
+        <option value="all">All Employees</option>
+      </select>
+
+      <input type="date" class="input" id="monitorDate"
+        onchange="loadEmployeeMonitoring()">
+    </div>
+
+    <p class="sub" id="monitorMessage">
+      Employee data will appear here.
+    </p>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <small>Total Login Hours</small>
+      <div class="number" id="monitorLogin">—</div>
+    </div>
+
+    <div class="stat">
+      <small>Active CRM Hours</small>
+      <div class="number" id="monitorActive">—</div>
+    </div>
+
+    <div class="stat">
+      <small>Total Idle Time</small>
+      <div class="number" id="monitorIdle">—</div>
+    </div>
+
+    <div class="stat">
+      <small>Calls Dialed</small>
+      <div class="number" id="monitorCalls" style="font-size:18px">
+        Not connected
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Employee Performance Report</h2>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Login Hours</th>
+            <th>Active Hours</th>
+            <th>Idle Time</th>
+            <th>Calls Dialed</th>
+            <th>Attendance</th>
+          </tr>
+        </thead>
+
+        <tbody id="monitorBody">
+          <tr>
+            <td colspan="6" class="empty">
+              Loading employee data...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Employee Login History</h2>
+    <p class="sub">Employee clock-in and clock-out records.</p>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Login Time</th>
+            <th>Logout Time</th>
+            <th>Session Duration</th>
+          </tr>
+        </thead>
+
+        <tbody id="monitorSessions">
+          <tr>
+            <td colspan="4" class="empty">
+              No sessions loaded.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</section>
+<!-- END EMPLOYEE MONITORING -->
 
   <!-- SETTINGS -->
   <section id="settingsSection" class="hidden">
