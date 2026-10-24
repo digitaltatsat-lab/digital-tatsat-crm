@@ -1207,6 +1207,218 @@ app.get(
 
 /* END DIGITAL TATSAT CRM V4 ACTIVITY TRACKING */
 
+```javascript
+// =====================================
+// DIGITAL TATSAT CRM V4
+// ADMIN EMPLOYEE MONITORING
+// READ ONLY - NO AUTOMATIC CLOCK OUT
+// =====================================
+
+app.get(
+  "/api/admin/employee-monitoring",
+  verifyAdmin,
+  async (req, res) => {
+    res.set("Cache-Control", "no-store");
+
+    try {
+      const date = String(
+        req.query.date || activityISTDate(Date.now())
+      );
+
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid date."
+        });
+      }
+
+      const dayStart = Date.parse(
+        date + "T00:00:00+05:30"
+      );
+
+      if (
+        !Number.isFinite(dayStart) ||
+        activityISTDate(dayStart) !== date
+      ) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid calendar date."
+        });
+      }
+
+      const dayEnd = dayStart + 86400000;
+
+      const startISO =
+        new Date(dayStart).toISOString();
+
+      const endISO =
+        new Date(dayEnd).toISOString();
+
+      const [
+        rolesResult,
+        activityResult,
+        sessionsResult
+      ] = await Promise.all([
+
+        req.supabase
+          .from("crm_user_roles")
+          .select("user_id,role")
+          .eq("role", "employee")
+          .limit(1000),
+
+        req.supabase
+          .from(ACTIVITY_TABLE)
+          .select(
+            "employee_id,active_seconds," +
+            "idle_seconds,last_heartbeat_at," +
+            "last_interaction_at"
+          )
+          .eq("activity_date", date)
+          .limit(1000),
+
+        req.supabase
+          .from(ATTENDANCE_TABLE)
+          .select(
+            "id,employee_id,login_at,logout_at"
+          )
+          .lt("login_at", endISO)
+          .or(
+            `logout_at.is.null,logout_at.gt.${startISO}`
+          )
+          .order("login_at", {
+            ascending: false
+          })
+          .limit(1000)
+
+      ]);
+
+      if (rolesResult.error) {
+        throw rolesResult.error;
+      }
+
+      if (activityResult.error) {
+        throw activityResult.error;
+      }
+
+      if (sessionsResult.error) {
+        throw sessionsResult.error;
+      }
+
+      const employees = new Map();
+
+      for (const row of rolesResult.data || []) {
+        employees.set(row.user_id, {
+          employee_id: row.user_id,
+          label:
+            "Employee " + row.user_id.slice(0, 8),
+          active_seconds: 0,
+          idle_seconds: 0,
+          login_seconds: 0,
+          clocked_in: false,
+          last_heartbeat_at: null,
+          last_interaction_at: null,
+          sessions: []
+        });
+      }
+
+      for (const row of activityResult.data || []) {
+        const item = employees.get(row.employee_id);
+
+        if (!item) continue;
+
+        item.active_seconds =
+          Number(row.active_seconds) || 0;
+
+        item.idle_seconds =
+          Number(row.idle_seconds) || 0;
+
+        item.last_heartbeat_at =
+          row.last_heartbeat_at;
+
+        item.last_interaction_at =
+          row.last_interaction_at;
+      }
+
+      const now = Date.now();
+
+      for (const session of sessionsResult.data || []) {
+        const item = employees.get(
+          session.employee_id
+        );
+
+        if (!item) continue;
+
+        const loginMs =
+          Date.parse(session.login_at);
+
+        const logoutMs = session.logout_at
+          ? Date.parse(session.logout_at)
+          : now;
+
+        const seconds =
+          Number.isFinite(loginMs) &&
+          Number.isFinite(logoutMs)
+            ? Math.max(
+                0,
+                Math.floor(
+                  (
+                    Math.min(
+                      logoutMs,
+                      dayEnd,
+                      now
+                    ) -
+                    Math.max(
+                      loginMs,
+                      dayStart
+                    )
+                  ) / 1000
+                )
+              )
+            : 0;
+
+        item.login_seconds += seconds;
+
+        if (!session.logout_at) {
+          item.clocked_in = true;
+        }
+
+        item.sessions.push({
+          login_at: session.login_at,
+          logout_at: session.logout_at,
+          duration_seconds: seconds
+        });
+      }
+
+      return res.json({
+        success: true,
+        date,
+        timezone: "Asia/Kolkata",
+        employees: [...employees.values()]
+      });
+
+    } catch (error) {
+      console.error(
+        "Admin monitoring:",
+        error.message
+      );
+
+      return res.status(500).json({
+        success: false,
+        error:
+          "Unable to load employee monitoring. " +
+          "Check admin RLS policies."
+      });
+    }
+  }
+);
+
+// =====================================
+// END ADMIN EMPLOYEE MONITORING
+// =====================================
+```
+
+
+
 // =====================================
 // LOGOUT
 // =====================================
