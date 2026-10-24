@@ -980,7 +980,7 @@ function switchTab(tab) {
 if (tab === 'monitoring') {
   loadEmployeeMonitoring();
 }
-
+}
 document.querySelectorAll('.nav').forEach(btn => {
   btn.addEventListener('click',() => {
     switchTab(btn.dataset.tab);
