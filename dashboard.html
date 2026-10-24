@@ -957,7 +957,7 @@ let allLeads = [];
 const $ = id => document.getElementById(id);
 
 function switchTab(tab) {
-  ['dashboard','leads','meta','settings'].forEach(t => {
+ ['dashboard','leads','meta','monitoring','settings'].forEach(t => {
     $(t+'Section').classList.toggle(
       'hidden',t!==tab
     );
@@ -969,13 +969,13 @@ function switchTab(tab) {
     );
   });
 
-  const titles = {
-    dashboard:'Sales Overview',
-    leads:'Lead Management V3',
-    meta:'Meta Ads Manager',
-    settings:'CRM Settings'
-  };
-
+ const titles = {
+  dashboard:'Sales Overview',
+  leads:'Lead Management V3',
+  meta:'Meta Ads Manager',
+  monitoring:'Employee Monitoring',
+  settings:'CRM Settings'
+};
   $('pageTitle').textContent = titles[tab];
 }
 
