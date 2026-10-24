@@ -977,6 +977,8 @@ function switchTab(tab) {
   settings:'CRM Settings'
 };
   $('pageTitle').textContent = titles[tab];
+if (tab === 'monitoring') {
+  loadEmployeeMonitoring();
 }
 
 document.querySelectorAll('.nav').forEach(btn => {
