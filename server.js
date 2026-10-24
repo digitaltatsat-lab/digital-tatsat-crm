@@ -868,7 +868,7 @@ app.get(
 
 const ACTIVITY_TABLE = "crm_employee_daily_activity";
 const ACTIVITY_IDLE_MS = 5 * 60 * 1000;
-const ACTIVITY_MAX_GAP_MS = 45 * 1000;
+const ACTIVITY_MAX_GAP_MS = 90 * 1000;
 
 // Current date in Indian Standard Time
 function activityISTDate(ms) {
