@@ -1564,7 +1564,395 @@ async function importCSV() {
   }
 }
 
+/* ==========================================
+   DIGITAL TATSAT CRM V4
+   ADMIN EMPLOYEE MONITORING
+   ========================================== */
+
+let monitoringEmployees = [];
+let monitoringRequestId = 0;
+
+// Convert seconds into hours and minutes
+function monitorHours(seconds) {
+  const total = Math.max(
+    0,
+    Math.floor(Number(seconds) || 0)
+  );
+
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+
+  return hours + 'h ' +
+    String(minutes).padStart(2, '0') + 'm';
+}
+
+// Get today's date in Indian timezone
+function monitorToday() {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date());
+
+  const part = type =>
+    parts.find(p => p.type === type)?.value;
+
+  return part('year') + '-' +
+    part('month') + '-' +
+    part('day');
+}
+
+// Format timestamps in Indian timezone
+function monitorDateTime(value) {
+  if (!value) return 'Still Logged In';
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '—';
+  }
+
+  return date.toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+}
+
+// Display table messages
+function monitorEmptyRow(tableId, columns, text) {
+  const body = document.getElementById(tableId);
+  body.replaceChildren();
+
+  const tr = document.createElement('tr');
+  const td = document.createElement('td');
+
+  td.colSpan = columns;
+  td.className = 'empty';
+  td.textContent = text;
+
+  tr.appendChild(td);
+  body.appendChild(tr);
+}
+
+// Fetch real employee monitoring data
+async function loadEmployeeMonitoring() {
+  const messageBox =
+    document.getElementById('monitorMessage');
+
+  const dateInput =
+    document.getElementById('monitorDate');
+
+  if (!messageBox || !dateInput) {
+    console.error(
+      'Employee Monitoring HTML elements are missing.'
+    );
+    return;
+  }
+
+  if (!dateInput.value) {
+    dateInput.value = monitorToday();
+  }
+
+  const requestId = ++monitoringRequestId;
+
+  messageBox.textContent =
+    'Loading employee monitoring data...';
+
+  try {
+    const response = await fetch(
+      '/api/admin/employee-monitoring?date=' +
+      encodeURIComponent(dateInput.value),
+      {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: {
+          'Accept': 'application/json'
+        },
+        cache: 'no-store'
+      }
+    );
+
+    if (response.status === 401) {
+      window.location.href = '/login';
+      return;
+    }
+
+    const result = await response.json()
+      .catch(() => ({}));
+
+    if (!response.ok || result.success !== true) {
+      throw new Error(
+        result.error ||
+        result.message ||
+        'Unable to load employee monitoring data'
+      );
+    }
+
+    // Ignore responses from older requests
+    if (requestId !== monitoringRequestId) {
+      return;
+    }
+
+    monitoringEmployees =
+      Array.isArray(result.employees)
+        ? result.employees
+        : [];
+
+    // Populate employee selector
+    const select =
+      document.getElementById('monitorEmployee');
+
+    const previous = select.value;
+
+    select.replaceChildren(
+      new Option('All Employees', 'all')
+    );
+
+    monitoringEmployees.forEach(employee => {
+      const id = String(employee.employee_id || '');
+
+      if (!id) return;
+
+      const label =
+        employee.label ||
+        'Employee ' + id.slice(0, 8);
+
+      select.add(new Option(label, id));
+    });
+
+    // Preserve previously selected employee
+    const stillExists = Array.from(select.options)
+      .some(option => option.value === previous);
+
+    if (stillExists) {
+      select.value = previous;
+    }
+
+    messageBox.textContent =
+      monitoringEmployees.length +
+      ' employee(s) loaded for ' +
+      (result.date || dateInput.value) + '.';
+
+    renderEmployeeMonitoring();
+
+  } catch (error) {
+    if (requestId !== monitoringRequestId) {
+      return;
+    }
+
+    console.error(
+      'Employee Monitoring Error:',
+      error
+    );
+
+    monitoringEmployees = [];
+
+    messageBox.textContent =
+      'Error loading employee data: ' +
+      error.message;
+
+    document.getElementById('monitorLogin')
+      .textContent = '—';
+
+    document.getElementById('monitorActive')
+      .textContent = '—';
+
+    document.getElementById('monitorIdle')
+      .textContent = '—';
+
+    document.getElementById('monitorCalls')
+      .textContent = 'Not connected';
+
+    monitorEmptyRow(
+      'monitorBody',
+      6,
+      'Unable to load employee data.'
+    );
+
+    monitorEmptyRow(
+      'monitorSessions',
+      4,
+      'Unable to load attendance history.'
+    );
+  }
+}
+
+// Render employee performance data
+function renderEmployeeMonitoring() {
+  const select =
+    document.getElementById('monitorEmployee');
+
+  const selected = select.value;
+
+  const employees = selected === 'all'
+    ? monitoringEmployees
+    : monitoringEmployees.filter(employee =>
+        String(employee.employee_id) === selected
+      );
+
+  let totalLogin = 0;
+  let totalActive = 0;
+  let totalIdle = 0;
+
+  const body =
+    document.getElementById('monitorBody');
+
+  body.replaceChildren();
+
+  employees.forEach(employee => {
+    const login = Number(employee.login_seconds) || 0;
+    const active = Number(employee.active_seconds) || 0;
+    const idle = Number(employee.idle_seconds) || 0;
+
+    totalLogin += login;
+    totalActive += active;
+    totalIdle += idle;
+
+    const name =
+      employee.label ||
+      'Employee ' +
+      String(employee.employee_id || '').slice(0, 8);
+
+    const tr = document.createElement('tr');
+
+    // Employee name
+    const nameTd = document.createElement('td');
+    nameTd.textContent = name;
+    tr.appendChild(nameTd);
+
+    // Login hours
+    const loginTd = document.createElement('td');
+    loginTd.textContent = monitorHours(login);
+    tr.appendChild(loginTd);
+
+    // Active hours
+    const activeTd = document.createElement('td');
+    activeTd.textContent = monitorHours(active);
+    tr.appendChild(activeTd);
+
+    // Idle time
+    const idleTd = document.createElement('td');
+    idleTd.textContent = monitorHours(idle);
+    tr.appendChild(idleTd);
+
+    // Calls not yet integrated
+    const callsTd = document.createElement('td');
+    callsTd.textContent = 'Not connected';
+    tr.appendChild(callsTd);
+
+    // Clock In / Out status
+    const statusTd = document.createElement('td');
+    const badge = document.createElement('span');
+
+    badge.className = employee.clocked_in
+      ? 'badge green'
+      : 'badge warning';
+
+    badge.textContent = employee.clocked_in
+      ? 'Clocked In'
+      : 'Clocked Out';
+
+    statusTd.appendChild(badge);
+    tr.appendChild(statusTd);
+
+    body.appendChild(tr);
+  });
+
+  // Update summary cards
+  document.getElementById('monitorLogin')
+    .textContent = monitorHours(totalLogin);
+
+  document.getElementById('monitorActive')
+    .textContent = monitorHours(totalActive);
+
+  document.getElementById('monitorIdle')
+    .textContent = monitorHours(totalIdle);
+
+  document.getElementById('monitorCalls')
+    .textContent = 'Not connected';
+
+  if (!employees.length) {
+    monitorEmptyRow(
+      'monitorBody',
+      6,
+      'No employee records found.'
+    );
+  }
+
+  renderMonitoringSessions(employees);
+}
+
+// Render employee login and logout history
+function renderMonitoringSessions(employees) {
+  const body =
+    document.getElementById('monitorSessions');
+
+  body.replaceChildren();
+
+  let sessionCount = 0;
+
+  employees.forEach(employee => {
+    const sessions = Array.isArray(employee.sessions)
+      ? employee.sessions
+      : [];
+
+    const name =
+      employee.label ||
+      'Employee ' +
+      String(employee.employee_id || '').slice(0, 8);
+
+    sessions.forEach(session => {
+      const tr = document.createElement('tr');
+
+      const values = [
+        name,
+        monitorDateTime(session.login_at),
+        session.logout_at
+          ? monitorDateTime(session.logout_at)
+          : 'Still Logged In',
+        monitorHours(session.duration_seconds)
+      ];
+
+      values.forEach(value => {
+        const td = document.createElement('td');
+        td.textContent = value;
+        tr.appendChild(td);
+      });
+
+      body.appendChild(tr);
+      sessionCount++;
+    });
+  });
+
+  if (sessionCount === 0) {
+    monitorEmptyRow(
+      'monitorSessions',
+      4,
+      'No attendance sessions found.'
+    );
+  }
+}
+
+/* ==========================================
+   END EMPLOYEE MONITORING
+   ========================================== */
+  
+// Employee Monitoring functions go here
+
+async function loadEmployeeMonitoring() {
+  // Complete function from Step 4
+}
+
+// Other Employee Monitoring functions from Step 4
+
 loadLeads();
 </script>
 </body>
-</html>
+</html>  
+
