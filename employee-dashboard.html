@@ -259,55 +259,32 @@
         id="attendanceMessage"
         role="status"
         aria-live="polite">
-        Clock In to enable CRM activity tracking.
-        Break tracking is not enabled yet.
+        Activity tracking starts after Clock In while this dashboard is open.
       </div>
-
-      <p id="activityStatus" role="status" aria-live="polite">
-        Loading CRM activity...
-      </p>
     </section>
 
     <section class="panel">
       <h3>Today's Attendance History (IST)</h3>
-      <p id="historySummary">
-        Loading today's attendance...
-      </p>
-
+      <p id="historySummary">Loading today's attendance...</p>
       <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;text-align:left">
           <thead>
             <tr>
-              <th style="padding:10px;border-bottom:1px solid #e1e7f0">
-                Clock In
-              </th>
-              <th style="padding:10px;border-bottom:1px solid #e1e7f0">
-                Clock Out
-              </th>
-              <th style="padding:10px;border-bottom:1px solid #e1e7f0">
-                Today's Hours
-              </th>
-              <th style="padding:10px;border-bottom:1px solid #e1e7f0">
-                Status
-              </th>
+              <th style="padding:10px;border-bottom:1px solid #e1e7f0">Clock In</th>
+              <th style="padding:10px;border-bottom:1px solid #e1e7f0">Clock Out</th>
+              <th style="padding:10px;border-bottom:1px solid #e1e7f0">Today's Hours</th>
+              <th style="padding:10px;border-bottom:1px solid #e1e7f0">Status</th>
             </tr>
           </thead>
-
           <tbody id="historyRows">
             <tr>
-              <td colspan="4" style="padding:10px">
-                Loading...
-              </td>
+              <td colspan="4" style="padding:10px">Loading...</td>
             </tr>
           </tbody>
         </table>
       </div>
-
       <div class="actions">
-        <button
-          type="button"
-          class="secondary"
-          id="refreshHistory">
+        <button type="button" class="secondary" id="refreshHistory">
           Refresh Attendance
         </button>
       </div>
@@ -371,16 +348,66 @@
       let dailyHistory = null;
       let busy = false;
       let loaded = false;
+      let activityInteracted = false;
+      let heartbeatBusy = false;
+      let lastActivityError = "";
+
+      // Only actual employee interaction with the visible CRM counts.
+      for (const eventName of ["pointerdown", "keydown", "scroll"]) {
+        document.addEventListener(eventName, () => {
+          if (session && document.visibilityState === "visible") {
+            activityInteracted = true;
+          }
+        }, { passive: true });
+      }
+
+      async function loadActivity() {
+        try {
+          const data = await request("/api/employee/activity/today");
+          document.getElementById("activeHours").textContent =
+            formatDuration(data.active_seconds || 0);
+          document.getElementById("idleHours").textContent =
+            formatDuration(data.idle_seconds || 0);
+        } catch (error) {
+          console.warn("Activity totals:", error.message);
+          document.getElementById("activeHours").textContent = "Unavailable";
+          document.getElementById("idleHours").textContent = "Unavailable";
+        }
+      }
+
+      async function sendHeartbeat() {
+        if (heartbeatBusy || !loaded || !session ||
+            document.visibilityState !== "visible") return;
+        heartbeatBusy = true;
+        const interacted = activityInteracted;
+        activityInteracted = false;
+        try {
+          const response = await fetch("/api/employee/activity/heartbeat", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Accept": "application/json", "Content-Type": "application/json" },
+            body: JSON.stringify({ interacted }),
+            cache: "no-store"
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !data.success) {
+            throw new Error(data.error || `Heartbeat failed (${response.status})`);
+          }
+          lastActivityError = "";
+          await loadActivity();
+        } catch (error) {
+          activityInteracted = activityInteracted || interacted;
+          lastActivityError = error.message;
+          console.warn("CRM activity heartbeat:", error.message);
+          message.textContent = `Attendance is unchanged. Activity tracking error: ${error.message}`;
+        } finally {
+          heartbeatBusy = false;
+        }
+      }
 
       function formatDuration(seconds) {
-        const minutes = Math.floor(
-          Math.max(0, seconds) / 60
-        );
-
-        return (
-          `${Math.floor(minutes / 60)}h ` +
-          `${String(minutes % 60).padStart(2, "0")}m`
-        );
+        const minutes = Math.floor(Math.max(0, seconds) / 60);
+        return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, "0")}m`;
       }
 
       function showHours() {
@@ -393,15 +420,11 @@
 
         if (
           dailyHistory.fetchedAt &&
-          dailyHistory.sessions.some(
-            s => s.status === "Active"
-          )
+          dailyHistory.sessions.some(s => s.status === "Active")
         ) {
           seconds += Math.max(
             0,
-            Math.floor(
-              (Date.now() - dailyHistory.fetchedAt) / 1000
-            )
+            Math.floor((Date.now() - dailyHistory.fetchedAt) / 1000)
           );
         }
 
@@ -431,8 +454,7 @@
           cache: "no-store"
         });
 
-        const data = await response.json()
-          .catch(() => ({}));
+        const data = await response.json().catch(() => ({}));
 
         if (!response.ok || !data.success) {
           throw new Error(
@@ -446,21 +468,15 @@
       }
 
       async function loadHistory() {
-        const summary =
-          document.getElementById("historySummary");
-
-        const rows =
-          document.getElementById("historyRows");
+        const summary = document.getElementById("historySummary");
+        const rows = document.getElementById("historyRows");
 
         try {
           const data = await request(
             "/api/employee/attendance/history"
           );
 
-          dailyHistory = {
-            ...data,
-            fetchedAt: Date.now()
-          };
+          dailyHistory = { ...data, fetchedAt: Date.now() };
 
           summary.textContent =
             `${data.date} · ${data.total_sessions} session(s) · ` +
@@ -471,10 +487,8 @@
           if (!data.sessions.length) {
             const tr = rows.insertRow();
             const td = tr.insertCell();
-
             td.colSpan = 4;
-            td.textContent =
-              "No attendance recorded today.";
+            td.textContent = "No attendance recorded today.";
             td.style.padding = "10px";
           }
 
@@ -488,11 +502,9 @@
               entry.status
             ]) {
               const td = tr.insertCell();
-
               td.textContent = value;
               td.style.padding = "10px";
-              td.style.borderBottom =
-                "1px solid #e1e7f0";
+              td.style.borderBottom = "1px solid #e1e7f0";
             }
           }
 
@@ -500,10 +512,8 @@
 
         } catch (error) {
           dailyHistory = null;
-
           summary.textContent =
             `Unable to load history: ${error.message}`;
-
           rows.replaceChildren();
           showHours();
         }
@@ -547,15 +557,12 @@
           loaded = true;
 
           await loadHistory();
-
+          await loadActivity();
           message.textContent =
-            "Attendance status loaded. " +
-            "CRM activity tracking runs while Clocked In. " +
-            "Break tracking is not enabled yet.";
+            "Attendance loaded. Activity tracking runs while clocked in and using this dashboard.";
 
         } catch (error) {
           loaded = false;
-
           message.textContent =
             `Attendance unavailable: ${error.message}`;
 
@@ -583,8 +590,12 @@
 
           await loadHistory();
           await loadActivity();
-
-          if (session) sendHeartbeat();
+          if (session) {
+            activityInteracted = true;
+            await sendHeartbeat();
+          } else {
+            activityInteracted = false;
+          }
 
         } catch (error) {
           message.textContent =
@@ -625,160 +636,15 @@
       document.getElementById("refreshHistory")
         .addEventListener("click", loadHistory);
 
-      // CRM activity tracking.
-      // This is separate from manual attendance.
-
-      const activeHours =
-        document.getElementById("activeHours");
-
-      const idleHours =
-        document.getElementById("idleHours");
-
-      const activityStatus =
-        document.getElementById("activityStatus");
-
-      let interactedSinceHeartbeat = false;
-      let heartbeatBusy = false;
-      let activityLoadBusy = false;
-
-      function markInteraction() {
-        if (
-          session &&
-          loaded &&
-          document.visibilityState === "visible"
-        ) {
-          interactedSinceHeartbeat = true;
-        }
-      }
-
-      for (const eventName of [
-        "pointerdown",
-        "keydown",
-        "wheel",
-        "touchstart"
-      ]) {
-        document.addEventListener(
-          eventName,
-          markInteraction,
-          { passive: true }
-        );
-      }
-
-      async function loadActivity() {
-        if (activityLoadBusy) return;
-
-        activityLoadBusy = true;
-
-        try {
-          const data = await request(
-            "/api/employee/activity/today"
-          );
-
-          activeHours.textContent =
-            formatDuration(data.active_seconds || 0);
-
-          idleHours.textContent =
-            formatDuration(data.idle_seconds || 0);
-
-          if (!session) {
-            activityStatus.textContent =
-              "Not Clocked In · Daily activity totals shown above.";
-          }
-
-        } catch (error) {
-          activityStatus.textContent =
-            `Unable to load CRM activity: ${error.message}`;
-
-        } finally {
-          activityLoadBusy = false;
-        }
-      }
-
-      async function sendHeartbeat() {
-        if (
-          heartbeatBusy ||
-          !loaded ||
-          !session ||
-          document.visibilityState !== "visible"
-        ) {
-          return;
-        }
-
-        heartbeatBusy = true;
-
-        const interacted = interactedSinceHeartbeat;
-        interactedSinceHeartbeat = false;
-
-        try {
-          const response = await fetch(
-            "/api/employee/activity/heartbeat",
-            {
-              method: "POST",
-              credentials: "same-origin",
-              cache: "no-store",
-              headers: {
-                "Accept": "application/json",
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({ interacted })
-            }
-          );
-
-          const data = await response.json()
-            .catch(() => ({}));
-
-          if (!response.ok || !data.success) {
-            throw new Error(
-              data.error ||
-              `Heartbeat failed (${response.status})`
-            );
-          }
-
-          activityStatus.textContent = data.tracking
-            ? `CRM activity: ${data.state} · ` +
-              "Idle threshold: 5 minutes · " +
-              "Attendance remains manual."
-            : "Clock In to start CRM activity tracking.";
-
-          await loadActivity();
-
-        } catch (error) {
-          interactedSinceHeartbeat =
-            interactedSinceHeartbeat || interacted;
-
-          activityStatus.textContent =
-            `CRM activity update failed: ${error.message}`;
-
-        } finally {
-          heartbeatBusy = false;
-        }
-      }
-
-      // Background tabs do not send heartbeats.
-      // Activity tracking never automatically Clocks Out.
-
-      document.addEventListener(
-        "visibilitychange",
-        () => {
-          if (document.visibilityState === "visible") {
-            loadActivity();
-          }
-        }
-      );
-
       setInterval(showHours, 30000);
       setInterval(loadHistory, 60000);
       setInterval(sendHeartbeat, 30000);
       setInterval(loadActivity, 60000);
-
-      refresh().then(() => {
-        loadActivity();
-
-        if (session) {
-          sendHeartbeat();
-        }
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") loadActivity();
       });
 
+      refresh();
     })();
   </script>
 
