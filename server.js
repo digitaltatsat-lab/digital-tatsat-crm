@@ -866,7 +866,7 @@ app.get(
    5-minute inactivity threshold
    ========================================== */
 
-const ACTIVITY_TABLE = "crm_employee_activity";
+const ACTIVITY_TABLE = "crm_employee_daily_activity";
 const ACTIVITY_IDLE_MS = 5 * 60 * 1000;
 const ACTIVITY_MAX_GAP_MS = 45 * 1000;
 
