@@ -265,6 +265,33 @@
     </section>
 
     <section class="panel">
+      <h3>Today's Attendance History (IST)</h3>
+      <p id="historySummary">Loading today's attendance...</p>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;text-align:left">
+          <thead>
+            <tr>
+              <th style="padding:10px;border-bottom:1px solid #e1e7f0">Clock In</th>
+              <th style="padding:10px;border-bottom:1px solid #e1e7f0">Clock Out</th>
+              <th style="padding:10px;border-bottom:1px solid #e1e7f0">Today's Hours</th>
+              <th style="padding:10px;border-bottom:1px solid #e1e7f0">Status</th>
+            </tr>
+          </thead>
+          <tbody id="historyRows">
+            <tr>
+              <td colspan="4" style="padding:10px">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="actions">
+        <button type="button" class="secondary" id="refreshHistory">
+          Refresh Attendance
+        </button>
+      </div>
+    </section>
+
+    <section class="panel">
       <h3>SIM-Based Calling</h3>
 
       <p>
@@ -319,37 +346,122 @@
         document.getElementById("loginHours");
 
       let session = null;
+      let dailyHistory = null;
       let busy = false;
       let loaded = false;
 
+      function formatDuration(seconds) {
+        const minutes = Math.floor(Math.max(0, seconds) / 60);
+        return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, "0")}m`;
+      }
+
       function showHours() {
-        if (!session || !session.login_at) {
+        if (!dailyHistory) {
           hours.textContent = "--";
           return;
         }
 
-        const start = Date.parse(session.login_at);
-
-        const end = session.logout_at
-          ? Date.parse(session.logout_at)
-          : Date.now();
+        let seconds = dailyHistory.total_seconds || 0;
 
         if (
-          !Number.isFinite(start) ||
-          !Number.isFinite(end)
+          dailyHistory.fetchedAt &&
+          dailyHistory.sessions.some(s => s.status === "Active")
         ) {
-          hours.textContent = "--";
-          return;
+          seconds += Math.max(
+            0,
+            Math.floor((Date.now() - dailyHistory.fetchedAt) / 1000)
+          );
         }
 
-        const minutes = Math.max(
-          0,
-          Math.floor((end - start) / 60000)
-        );
+        hours.textContent = formatDuration(seconds);
+      }
 
-        hours.textContent =
-          `${Math.floor(minutes / 60)}h ` +
-          `${String(minutes % 60).padStart(2, "0")}m`;
+      function formatIST(value) {
+        if (!value) return "Still clocked in";
+
+        return new Date(value).toLocaleString("en-IN", {
+          timeZone: "Asia/Kolkata",
+          day: "2-digit",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true
+        });
+      }
+
+      async function request(url, method = "GET") {
+        const response = await fetch(url, {
+          method,
+          credentials: "same-origin",
+          headers: {
+            "Accept": "application/json"
+          },
+          cache: "no-store"
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok || !data.success) {
+          throw new Error(
+            data.error ||
+            data.message ||
+            `Request failed (${response.status})`
+          );
+        }
+
+        return data;
+      }
+
+      async function loadHistory() {
+        const summary = document.getElementById("historySummary");
+        const rows = document.getElementById("historyRows");
+
+        try {
+          const data = await request(
+            "/api/employee/attendance/history"
+          );
+
+          dailyHistory = { ...data, fetchedAt: Date.now() };
+
+          summary.textContent =
+            `${data.date} · ${data.total_sessions} session(s) · ` +
+            `${formatDuration(data.total_seconds)} total attendance`;
+
+          rows.replaceChildren();
+
+          if (!data.sessions.length) {
+            const tr = rows.insertRow();
+            const td = tr.insertCell();
+            td.colSpan = 4;
+            td.textContent = "No attendance recorded today.";
+            td.style.padding = "10px";
+          }
+
+          for (const entry of data.sessions) {
+            const tr = rows.insertRow();
+
+            for (const value of [
+              formatIST(entry.login_at),
+              formatIST(entry.logout_at),
+              formatDuration(entry.duration_seconds),
+              entry.status
+            ]) {
+              const td = tr.insertCell();
+              td.textContent = value;
+              td.style.padding = "10px";
+              td.style.borderBottom = "1px solid #e1e7f0";
+            }
+          }
+
+          showHours();
+
+        } catch (error) {
+          dailyHistory = null;
+          summary.textContent =
+            `Unable to load history: ${error.message}`;
+          rows.replaceChildren();
+          showHours();
+        }
       }
 
       function render() {
@@ -377,30 +489,6 @@
         showHours();
       }
 
-      async function request(url, method = "GET") {
-        const response = await fetch(url, {
-          method,
-          credentials: "same-origin",
-          headers: {
-            "Accept": "application/json"
-          },
-          cache: "no-store"
-        });
-
-        const data = await response.json()
-          .catch(() => ({}));
-
-        if (!response.ok || !data.success) {
-          throw new Error(
-            data.error ||
-            data.message ||
-            `Request failed (${response.status})`
-          );
-        }
-
-        return data;
-      }
-
       async function refresh() {
         busy = true;
         render();
@@ -413,6 +501,8 @@
           session = data.session || null;
           loaded = true;
 
+          await loadHistory();
+
           message.textContent =
             "Attendance status loaded. " +
             "Break and active/idle tracking " +
@@ -420,7 +510,6 @@
 
         } catch (error) {
           loaded = false;
-
           message.textContent =
             `Attendance unavailable: ${error.message}`;
 
@@ -445,6 +534,8 @@
 
           message.textContent =
             data.message || "Attendance updated.";
+
+          await loadHistory();
 
         } catch (error) {
           message.textContent =
@@ -482,9 +573,11 @@
         )
       );
 
-      setInterval(() => {
-        if (session) showHours();
-      }, 30000);
+      document.getElementById("refreshHistory")
+        .addEventListener("click", loadHistory);
+
+      setInterval(showHours, 30000);
+      setInterval(loadHistory, 60000);
 
       refresh();
     })();
