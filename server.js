@@ -749,6 +749,7 @@ app.post(
    EMPLOYEE DAILY ATTENDANCE HISTORY
    ========================================== */
 
+
 app.get(
   "/api/employee/attendance/history",
   verifyEmployee,
@@ -757,84 +758,76 @@ app.get(
 
     try {
       const employeeId = req.crmUser.id;
+      const now = Date.now();
 
-      // Get today's date in Indian Standard Time
-      const parts = new Intl.DateTimeFormat(
-        "en-GB",
-        {
-          timeZone: "Asia/Kolkata",
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit"
-        }
-      ).formatToParts(new Date());
+      const parts = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      }).formatToParts(new Date(now));
 
-      const datePart = (type) =>
-        parts.find(p => p.type === type).value;
+      const part = (type) =>
+        parts.find((p) => p.type === type).value;
 
       const today =
-        `${datePart("year")}-` +
-        `${datePart("month")}-` +
-        `${datePart("day")}`;
+        `${part("year")}-${part("month")}-${part("day")}`;
 
-      const start = new Date(
+      const dayStart = Date.parse(
         `${today}T00:00:00+05:30`
       );
-
-      const end = new Date(
-        start.getTime() + 86400000
-      );
+      const dayEnd = dayStart + 86400000;
+      const startISO = new Date(dayStart).toISOString();
+      const endISO = new Date(dayEnd).toISOString();
 
       const { data, error } = await req.supabase
-        .from("crm_employee_sessions")
+        .from(ATTENDANCE_TABLE)
         .select("id,login_at,logout_at")
         .eq("employee_id", employeeId)
-        .gte("login_at", start.toISOString())
-        .lt("login_at", end.toISOString())
-        .order("login_at", {
-          ascending: false
-        });
+        .lt("login_at", endISO)
+        .or(`logout_at.is.null,logout_at.gt.${startISO}`)
+        .order("login_at", { ascending: false });
 
       if (error) throw error;
 
       let totalSeconds = 0;
-      const now = Date.now();
 
-      const sessions = (data || []).map(
-        (item) => {
-          const loginTime = Date.parse(
-            item.login_at
-          );
+      const sessions = (data || []).map((item) => {
+        const loginMs = Date.parse(item.login_at);
+        const logoutMs = item.logout_at
+          ? Date.parse(item.logout_at)
+          : now;
 
-          const logoutTime = item.logout_at
-            ? Date.parse(item.logout_at)
-            : now;
+        const overlapStart = Math.max(loginMs, dayStart);
+        const overlapEnd = Math.min(
+          logoutMs,
+          dayEnd,
+          now
+        );
 
-          const duration = (
-            Number.isFinite(loginTime) &&
-            Number.isFinite(logoutTime)
-          )
+        const duration =
+          Number.isFinite(overlapStart) &&
+          Number.isFinite(overlapEnd)
             ? Math.max(
                 0,
                 Math.floor(
-                  (logoutTime - loginTime) / 1000
+                  (overlapEnd - overlapStart) / 1000
                 )
               )
             : 0;
 
-          totalSeconds += duration;
+        totalSeconds += duration;
 
-          return {
-            id: item.id,
-            login_at: item.login_at,
-            logout_at: item.logout_at,
-            duration_seconds: duration,
-            status: item.logout_at
-              ? "Completed"
-              : "Active"
-          };
-        }
-      );
+        return {
+          id: item.id,
+          login_at: item.login_at,
+          logout_at: item.logout_at,
+          duration_seconds: duration,
+          status: item.logout_at
+            ? "Completed"
+            : "Active"
+        };
+      });
 
       return res.json({
         success: true,
@@ -842,13 +835,11 @@ app.get(
         timezone: "Asia/Kolkata",
         total_sessions: sessions.length,
         total_seconds: totalSeconds,
-        total_minutes: Math.floor(
-          totalSeconds / 60
-        ),
+        total_minutes: Math.floor(totalSeconds / 60),
         total_hours: Number(
           (totalSeconds / 3600).toFixed(2)
         ),
-        sessions: sessions
+        sessions
       });
 
     } catch (error) {
