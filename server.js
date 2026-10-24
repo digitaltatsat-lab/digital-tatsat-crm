@@ -860,6 +860,353 @@ app.get(
    END OF ATTENDANCE HISTORY
    ========================================== */
 
+/* ==========================================
+   DIGITAL TATSAT CRM V4
+   ACTIVE / IDLE TRACKING
+   5-minute inactivity threshold
+   ========================================== */
+
+const ACTIVITY_TABLE = "crm_employee_activity";
+const ACTIVITY_IDLE_MS = 5 * 60 * 1000;
+const ACTIVITY_MAX_GAP_MS = 45 * 1000;
+
+// Current date in Indian Standard Time
+function activityISTDate(ms) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date(ms));
+
+  const get = type =>
+    parts.find(p => p.type === type).value;
+
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+// Next midnight in IST
+function activityMidnightAfter(ms) {
+  const date = activityISTDate(ms);
+  return Date.parse(`${date}T00:00:00+05:30`) + 86400000;
+}
+
+// Split a tracked interval into active and idle seconds
+function activityIntervals(start, end, activeUntil) {
+  const activeMs = Math.max(
+    0,
+    Math.min(end, activeUntil) - start
+  );
+
+  return {
+    active: Math.max(0, Math.round(activeMs / 1000)),
+    idle: Math.max(
+      0,
+      Math.round((end - start - activeMs) / 1000)
+    )
+  };
+}
+
+// Save daily totals using optimistic concurrency control
+async function activityAdd(
+  req, date, active, idle, nowISO, interactionISO
+) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const { data: old, error: readError } =
+      await req.supabase
+        .from(ACTIVITY_TABLE)
+        .select(
+          "id,active_seconds,idle_seconds,updated_at"
+        )
+        .eq("employee_id", req.crmUser.id)
+        .eq("activity_date", date)
+        .maybeSingle();
+
+    if (readError) throw readError;
+
+    if (!old) {
+      const { error: insertError } =
+        await req.supabase
+          .from(ACTIVITY_TABLE)
+          .insert({
+            employee_id: req.crmUser.id,
+            activity_date: date,
+            active_seconds: active,
+            idle_seconds: idle,
+            last_seen_at: nowISO,
+            last_heartbeat_at: nowISO,
+            last_interaction_at: interactionISO,
+            updated_at: nowISO
+          });
+
+      if (!insertError) return;
+
+      if (insertError.code === "23505") continue;
+
+      throw insertError;
+    }
+
+    const { data: updated, error: updateError } =
+      await req.supabase
+        .from(ACTIVITY_TABLE)
+        .update({
+          active_seconds: old.active_seconds + active,
+          idle_seconds: old.idle_seconds + idle,
+          last_seen_at: nowISO,
+          last_heartbeat_at: nowISO,
+          ...(interactionISO
+            ? { last_interaction_at: interactionISO }
+            : {}),
+          updated_at: new Date(
+            Date.now() + attempt + 1
+          ).toISOString()
+        })
+        .eq("id", old.id)
+        .eq("employee_id", req.crmUser.id)
+        .eq("updated_at", old.updated_at)
+        .select("id")
+        .maybeSingle();
+
+    if (updateError) throw updateError;
+    if (updated) return;
+  }
+
+  throw new Error("Activity update conflict.");
+}
+
+// ==========================================
+// POST: EMPLOYEE ACTIVITY HEARTBEAT
+// ==========================================
+
+app.post(
+  "/api/employee/activity/heartbeat",
+  verifyEmployee,
+  async (req, res) => {
+    res.set("Cache-Control", "no-store");
+
+    if (typeof req.body?.interacted !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        error: "interacted must be a boolean."
+      });
+    }
+
+    try {
+      // Activity tracking requires manual Clock In.
+      // This endpoint NEVER performs Clock Out.
+      const attendance = await getOpenAttendance(req);
+
+      if (!attendance) {
+        return res.json({
+          success: true,
+          tracking: false,
+          reason:
+            "Clock In to start CRM activity tracking."
+        });
+      }
+
+      const now = Date.now();
+      const nowISO = new Date(now).toISOString();
+      const date = activityISTDate(now);
+
+      const { data: today, error } =
+        await req.supabase
+          .from(ACTIVITY_TABLE)
+          .select(
+            "last_heartbeat_at,last_interaction_at"
+          )
+          .eq("employee_id", req.crmUser.id)
+          .eq("activity_date", date)
+          .maybeSingle();
+
+      if (error) throw error;
+
+      let prior = today;
+
+      // Preserve continuity across midnight IST
+      if (!prior?.last_heartbeat_at) {
+        const {
+          data: previous,
+          error: prevError
+        } = await req.supabase
+          .from(ACTIVITY_TABLE)
+          .select(
+            "last_heartbeat_at,last_interaction_at"
+          )
+          .eq("employee_id", req.crmUser.id)
+          .lt("activity_date", date)
+          .order("activity_date", {
+            ascending: false
+          })
+          .limit(1)
+          .maybeSingle();
+
+        if (prevError) throw prevError;
+        prior = previous;
+      }
+
+      const previousHeartbeat =
+        prior?.last_heartbeat_at
+          ? Date.parse(prior.last_heartbeat_at)
+          : NaN;
+
+      const previousInteraction =
+        prior?.last_interaction_at
+          ? Date.parse(prior.last_interaction_at)
+          : NaN;
+
+      const gap = Number.isFinite(
+        previousHeartbeat
+      )
+        ? now - previousHeartbeat
+        : 0;
+
+      // Do not count long disconnected periods
+      const start =
+        gap > 0 && gap <= ACTIVITY_MAX_GAP_MS
+          ? previousHeartbeat
+          : now;
+
+      const newInteraction =
+        req.body.interacted ? nowISO : null;
+
+      const activeUntil =
+        req.body.interacted
+          ? now
+          : Number.isFinite(previousInteraction)
+            ? previousInteraction + ACTIVITY_IDLE_MS
+            : start;
+
+      let cursor = start;
+
+      while (cursor < now) {
+        const finish = Math.min(
+          now,
+          activityMidnightAfter(cursor)
+        );
+
+        const pieces = activityIntervals(
+          cursor,
+          finish,
+          activeUntil
+        );
+
+        await activityAdd(
+          req,
+          activityISTDate(cursor),
+          pieces.active,
+          pieces.idle,
+          nowISO,
+          activityISTDate(cursor) === date
+            ? newInteraction
+            : null
+        );
+
+        cursor = finish;
+      }
+
+      if (
+        start === now ||
+        activityISTDate(start) !== date
+      ) {
+        await activityAdd(
+          req,
+          date,
+          0,
+          0,
+          nowISO,
+          newInteraction
+        );
+      }
+
+      return res.json({
+        success: true,
+        tracking: true,
+        date,
+        timezone: "Asia/Kolkata",
+        idle_after_seconds: 300,
+        state:
+          req.body.interacted ||
+          (
+            Number.isFinite(previousInteraction) &&
+            now - previousInteraction <
+              ACTIVITY_IDLE_MS
+          )
+            ? "Active"
+            : "Idle"
+      });
+
+    } catch (error) {
+      console.error(
+        "Activity heartbeat:",
+        error.message
+      );
+
+      return res.status(500).json({
+        success: false,
+        error: "Unable to record CRM activity."
+      });
+    }
+  }
+);
+
+// ==========================================
+// GET: TODAY'S ACTIVE / IDLE HOURS
+// ==========================================
+
+app.get(
+  "/api/employee/activity/today",
+  verifyEmployee,
+  async (req, res) => {
+    res.set("Cache-Control", "no-store");
+
+    try {
+      const date = activityISTDate(Date.now());
+
+      const { data, error } =
+        await req.supabase
+          .from(ACTIVITY_TABLE)
+          .select(
+            "active_seconds,idle_seconds," +
+            "last_interaction_at,last_heartbeat_at"
+          )
+          .eq("employee_id", req.crmUser.id)
+          .eq("activity_date", date)
+          .maybeSingle();
+
+      if (error) throw error;
+
+      return res.json({
+        success: true,
+        date,
+        timezone: "Asia/Kolkata",
+        idle_after_seconds: 300,
+        active_seconds:
+          data?.active_seconds || 0,
+        idle_seconds:
+          data?.idle_seconds || 0,
+        last_interaction_at:
+          data?.last_interaction_at || null,
+        last_heartbeat_at:
+          data?.last_heartbeat_at || null
+      });
+
+    } catch (error) {
+      console.error(
+        "Activity today:",
+        error.message
+      );
+
+      return res.status(500).json({
+        success: false,
+        error: "Unable to load CRM activity."
+      });
+    }
+  }
+);
+
+/* END DIGITAL TATSAT CRM V4 ACTIVITY TRACKING */
+
 // =====================================
 // LOGOUT
 // =====================================
