@@ -397,7 +397,16 @@ function normalizeLead(input, options = {}) {
   const clientId = cleanText(
     input.client_id, 36
   );
+  const nextFollowUp = input.next_follow_up
+  ? String(input.next_follow_up).trim()
+  : null;
 
+if (
+  nextFollowUp &&
+  !/^\d{4}-\d{2}-\d{2}$/.test(nextFollowUp)
+) {
+  throw new Error("Invalid follow-up date.");
+}
   if (!name) {
     throw new Error("Customer name is required.");
   }
@@ -440,6 +449,7 @@ function normalizeLead(input, options = {}) {
       options.allowClientId && clientId
         ? clientId
         : null
+   next_follow_up: nextFollowUp
   };
 }
 
