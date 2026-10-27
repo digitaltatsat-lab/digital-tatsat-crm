@@ -446,10 +446,10 @@ if (
     form_name: formName || null,
     status,
     client_id:
-      options.allowClientId && clientId
-        ? clientId
-        : null
-   next_follow_up: nextFollowUp
+  options.allowClientId && clientId
+    ? clientId
+    : null,
+next_follow_up: nextFollowUp
   };
 }
 
