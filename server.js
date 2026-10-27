@@ -1577,12 +1577,13 @@ app.patch(
         });
       }
 
-      const allowed = [
-        "name", "phone", "email",
-        "company", "assigned_to",
-        "status", "lead_source",
-        "form_name"
-      ];
+const allowed = [
+  "name", "phone", "email",
+  "company", "assigned_to",
+  "status", "lead_source",
+  "form_name",
+  "next_follow_up"
+];
 
       const submitted = req.body;
 
