@@ -25,10 +25,14 @@ const STATUSES = [
 ];
 
 const LEAD_FIELDS = [
+  
+
   "id", "name", "phone", "email", "status",
   "lead_source", "form_name", "company",
-  "assigned_to", "client_id"
+  "assigned_to", "client_id",
+  "next_follow_up"
 ].join(",");
+
 
 // =====================================
 // SUPABASE CONNECTION
