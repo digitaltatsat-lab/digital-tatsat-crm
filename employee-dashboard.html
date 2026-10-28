@@ -338,7 +338,69 @@
   <script>
     (() => {
       "use strict";
+async function loadAssignedLeads() {
+  const message = document.getElementById("assignedLeadsMessage");
+  const rows = document.getElementById("assignedLeadsRows");
 
+  message.textContent = "Loading assigned leads...";
+  rows.replaceChildren();
+
+  try {
+    const response = await fetch("/api/employee/assigned-leads", {
+      credentials: "same-origin",
+      cache: "no-store"
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || "Unable to load leads");
+    }
+
+    message.textContent = `${data.count} assigned lead(s)`;
+
+    for (const lead of data.leads) {
+      const tr = rows.insertRow();
+
+      const values = [
+        lead.id,
+        lead.name || "-",
+        lead.phone || "-",
+        lead.status || "-",
+        lead.next_follow_up || "-"
+      ];
+
+      for (const value of values) {
+        const td = tr.insertCell();
+        td.textContent = value;
+        td.style.padding = "12px";
+        td.style.borderBottom = "1px solid #e1e7f0";
+      }
+
+      const actionCell = tr.insertCell();
+      actionCell.style.padding = "12px";
+
+      if (lead.phone) {
+        const callLink = document.createElement("a");
+        callLink.textContent = "Call Now";
+        callLink.href = "tel:" + lead.phone.replace(/[^\d+]/g, "");
+        callLink.style.color = "#2563eb";
+        callLink.style.fontWeight = "bold";
+        actionCell.appendChild(callLink);
+      } else {
+        actionCell.textContent = "No phone";
+      }
+    }
+
+  } catch (error) {
+    message.textContent = `Unable to load leads: ${error.message}`;
+  }
+}
+
+document.getElementById("refreshAssignedLeads")
+  .addEventListener("click", loadAssignedLeads);
+
+loadAssignedLeads();
       const inButton =
         document.getElementById("clockInButton");
 
