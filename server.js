@@ -586,7 +586,16 @@ app.get(
     );
   }
 );
+/* ==========================================
+   DIGITAL TATSAT CRM V4
+   ADMIN CALL MONITORING PAGE
+   ========================================== */
 
+app.get("/call-monitoring", verifyAdmin, (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "call-monitoring.html")
+  );
+});
 // =====================================
 // EMPLOYEE DASHBOARD
 // =====================================
