@@ -1883,12 +1883,30 @@ app.get(
  // =====================================
  // EMPLOYEE ASSIGNED LEADS API
  // =====================================
-app.get("/api/employee/assigned-leads-test", (req, res) => {
-  return res.json({
-    success: true,
-    message: "Assigned Leads API location reached"
-  });
-});
+
+ // =====================================
+ // EMPLOYEE AUTHENTICATION TEST
+ // TEMPORARY - REMOVE AFTER TESTING
+ // =====================================
+
+app.get(
+  "/api/employee/auth-check",
+  verifyEmployee,
+  (req, res) => {
+    res.set("Cache-Control", "no-store");
+
+    return res.json({
+      success: true,
+      message: "Employee authentication verified"
+    });
+  }
+);
+
+// =====================================
+// EMPLOYEE ASSIGNED LEADS API
+// DIGITAL TATSAT CRM V4
+// =====================================
+
 app.get(
   "/api/employee/assigned-leads",
   verifyEmployee,
@@ -1907,9 +1925,16 @@ app.get(
         .order("id", { ascending: false })
         .limit(500);
 
-      if (error) throw error;
+      if (error) {
+        console.error(
+          "Assigned leads database error:",
+          error.message
+        );
 
-      return res.json({
+        throw error;
+      }
+
+      return res.status(200).json({
         success: true,
         count: data.length,
         leads: data
@@ -1928,6 +1953,7 @@ app.get(
     }
   }
 );
+
 // =====================================
 // START SERVER
 // =====================================
