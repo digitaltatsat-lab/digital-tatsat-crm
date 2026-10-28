@@ -1883,7 +1883,12 @@ app.get(
  // =====================================
  // EMPLOYEE ASSIGNED LEADS API
  // =====================================
-
+app.get("/api/employee/assigned-leads-test", (req, res) => {
+  return res.json({
+    success: true,
+    message: "Assigned Leads API location reached"
+  });
+});
 app.get(
   "/api/employee/assigned-leads",
   verifyEmployee,
