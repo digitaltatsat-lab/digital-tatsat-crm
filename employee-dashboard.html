@@ -450,9 +450,11 @@
     | Employee Management System
   </footer>
 
-  <script>
-    (() => {
-      "use strict";
+ <script>
+  (() => {
+    "use strict";
+
+    document.addEventListener("DOMContentLoaded", () => {
       
 // =======================================
 // DIGITAL TATSAT CRM V4 - CALL DISPOSITION
@@ -1117,10 +1119,10 @@ loadAssignedLeads();
         if (document.visibilityState === "visible") loadActivity();
       });
 
-      refresh();
-    })();
-  </script>
-
+     refresh();
+     });
+     })();
+     </script>
 <!-- DIGITAL TATSAT CALL DISPOSITION POPUP -->
 
 <div id="dtCallModal"
