@@ -2184,6 +2184,74 @@ app.post("/api/employee/call-logs", verifyEmployee, async (req, res) => {
   }
 });
 
+/* ==========================================
+   DIGITAL TATSAT CRM V4
+   ADMIN CALL MONITORING API
+   READ ONLY - NO DATA MODIFICATION
+   ========================================== */
+
+app.get(
+  "/api/admin/call-logs",
+  verifyAdmin,
+  async (req, res) => {
+    res.set("Cache-Control", "no-store");
+
+    try {
+      const { data, error } = await req.supabase
+        .from("crm_call_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(500);
+
+      if (error) throw error;
+
+      const calls = data || [];
+
+      const summary = {
+        total_calls: calls.length,
+
+        connected: calls.filter(
+          c => c.call_status === "Connected"
+        ).length,
+
+        not_connected: calls.filter(
+          c => c.call_status === "Not Connected"
+        ).length,
+
+        interested: calls.filter(
+          c => c.disposition === "Interested"
+        ).length,
+
+        follow_ups: calls.filter(
+          c => c.next_follow_up != null
+        ).length
+      };
+
+      return res.status(200).json({
+        success: true,
+        summary,
+        calls
+      });
+
+    } catch (error) {
+      console.error(
+        "Admin call monitoring:",
+        error.message
+      );
+
+      return res.status(500).json({
+        success: false,
+        error:
+          "Unable to load call logs. Check admin RLS permissions."
+      });
+    }
+  }
+);
+
+/* ==========================================
+   END ADMIN CALL MONITORING API
+   ========================================== */
+
 // =====================================
 // START SERVER
 // =====================================
