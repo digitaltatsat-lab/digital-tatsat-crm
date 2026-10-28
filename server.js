@@ -1954,6 +1954,236 @@ app.get(
   }
 );
 
+ // ==========================================
+ // DIGITAL TATSAT CRM V4 - EMPLOYEE CALL LOG
+ // ==========================================
+
+app.post("/api/employee/call-logs", verifyEmployee, async (req, res) => {
+  try {
+    const {
+      lead_id,
+      call_status,
+      disposition,
+      service_category,
+      service_product,
+      remarks,
+      next_follow_up,
+      follow_up_time
+    } = req.body || {};
+
+    const leadId = Number(lead_id);
+    const employeeId = req.crmUser.id;
+
+    if (!Number.isSafeInteger(leadId) || leadId <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Valid lead ID is required."
+      });
+    }
+
+    const connectedReasons = [
+      "Interested",
+      "Not Interested",
+      "Partially Interested",
+      "Follow-up Required",
+      "Call Back Requested",
+      "Payment Pending",
+      "Converted",
+      "Not Qualified"
+    ];
+
+    const notConnectedReasons = [
+      "RNR",
+      "Busy",
+      "Switched Off",
+      "Not Reachable",
+      "Wrong Number"
+    ];
+
+    if (!["Connected", "Not Connected"].includes(call_status)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid call status."
+      });
+    }
+
+    const validReasons = call_status === "Connected"
+      ? connectedReasons
+      : notConnectedReasons;
+
+    if (!validReasons.includes(disposition)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid call disposition."
+      });
+    }
+
+    const products = {
+      "Google Business Profile (GMB)": [
+        "Google Listing",
+        "GMB Permanently / Temporarily Closed",
+        "GMB Website Integration",
+        "Google Optimisation"
+      ],
+      "Website Development": [
+        "E-Commerce Website",
+        "Informative Website"
+      ],
+      "App Development": [
+        "Android App",
+        "iOS App"
+      ],
+      "Software": [
+        "Lead Management System",
+        "Workflow Management System",
+        "Inventory Management System"
+      ],
+      "Web App": [
+        "Web App Development"
+      ],
+      "Social Media Management & Marketing": [
+        "Social Media Management",
+        "Social Media Marketing"
+      ],
+      "Others": [
+        "Other / Custom Requirement"
+      ]
+    };
+
+    let category = null;
+    let product = null;
+
+    if (call_status === "Connected") {
+      if (!Object.prototype.hasOwnProperty.call(products, service_category)) {
+        return res.status(400).json({
+          success: false,
+          error: "Select a valid service category."
+        });
+      }
+
+      if (service_category === "Others") {
+        if (typeof service_product !== "string" ||
+            !service_product.trim() ||
+            service_product.length > 150) {
+          return res.status(400).json({
+            success: false,
+            error: "Enter a valid custom requirement."
+          });
+        }
+        product = service_product.trim();
+      } else {
+        if (!products[service_category].includes(service_product)) {
+          return res.status(400).json({
+            success: false,
+            error: "Select a valid service product."
+          });
+        }
+        product = service_product;
+      }
+
+      category = service_category;
+    }
+
+    if (remarks != null &&
+        (typeof remarks !== "string" || remarks.length > 2000)) {
+      return res.status(400).json({
+        success: false,
+        error: "Remarks must be under 2000 characters."
+      });
+    }
+
+    const followUpDate = next_follow_up || null;
+    const followUpTime = follow_up_time || null;
+
+    if ((followUpDate && !followUpTime) ||
+        (!followUpDate && followUpTime)) {
+      return res.status(400).json({
+        success: false,
+        error: "Provide both follow-up date and time."
+      });
+    }
+
+    if (followUpDate) {
+      if (typeof followUpDate !== "string" ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(followUpDate)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid follow-up date."
+        });
+      }
+
+      const date = new Date(followUpDate + "T00:00:00Z");
+
+      if (Number.isNaN(date.getTime()) ||
+          date.toISOString().slice(0, 10) !== followUpDate) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid follow-up date."
+        });
+      }
+
+      if (typeof followUpTime !== "string" ||
+          !/^([01]\d|2[0-3]):[0-5]\d$/.test(followUpTime)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid follow-up time."
+        });
+      }
+    }
+
+    // Verify the lead is assigned to this employee.
+    const { data: lead, error: leadError } = await req.supabase
+      .from("LEADS 1")
+      .select("id")
+      .eq("id", leadId)
+      .eq("assigned_employee_id", employeeId)
+      .maybeSingle();
+
+    if (leadError) throw leadError;
+
+    if (!lead) {
+      return res.status(403).json({
+        success: false,
+        error: "This lead is not assigned to you."
+      });
+    }
+
+    // Save call log without changing existing lead data.
+    const { data: log, error: logError } = await req.supabase
+      .from("crm_call_logs")
+      .insert({
+        lead_id: leadId,
+        employee_id: employeeId,
+        call_method: "SIM",
+        call_status,
+        disposition,
+        service_category: category,
+        service_product: product,
+        remarks: remarks || null,
+        next_follow_up: followUpDate,
+        follow_up_time: followUpTime
+      })
+      .select("*")
+      .single();
+
+    if (logError) throw logError;
+
+    return res.status(201).json({
+      success: true,
+      message: "Call log saved successfully.",
+      call: log
+    });
+
+  } catch (error) {
+    console.error("Call logging error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      error: "Unable to save call log."
+    });
+  }
+});
+
 // =====================================
 // START SERVER
 // =====================================
