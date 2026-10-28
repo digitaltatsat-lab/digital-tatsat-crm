@@ -176,6 +176,121 @@
       main { margin-top: 20px; }
       .welcome h2 { font-size: 21px; }
     }
+    /* DIGITAL TATSAT - CALL DISPOSITION POPUP */
+
+.dt-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 20, 42, 0.75);
+  z-index: 9999;
+  padding: 15px;
+  overflow-y: auto;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.dt-modal.open {
+  display: flex;
+}
+
+.dt-modal-box {
+  background: #ffffff;
+  width: 100%;
+  max-width: 550px;
+  margin: 25px auto;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 12px 45px rgba(0,0,0,.25);
+}
+
+.dt-modal-header {
+  background: #10294d;
+  color: white;
+  padding: 18px 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dt-modal-header h3 {
+  margin: 0;
+}
+
+.dt-modal-body {
+  padding: 22px;
+}
+
+.dt-field {
+  margin-bottom: 16px;
+}
+
+.dt-field label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 7px;
+}
+
+.dt-field input,
+.dt-field select,
+.dt-field textarea {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #d5deea;
+  border-radius: 7px;
+  font: inherit;
+  background: white;
+  color: #182b46;
+}
+
+.dt-field textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.dt-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.dt-status-options {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.dt-status-options label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+}
+
+.dt-save {
+  background: #2463eb;
+  color: white;
+  width: 100%;
+}
+
+.dt-close {
+  background: transparent;
+  color: white;
+  font-size: 24px;
+  padding: 0 5px;
+}
+
+.dt-feedback {
+  margin: 10px 0;
+  font-size: 13px;
+}
+
+@media(max-width: 480px) {
+  .dt-grid {
+    grid-template-columns: 1fr;
+  }
+}
   </style>
 </head>
 
@@ -338,6 +453,285 @@
   <script>
     (() => {
       "use strict";
+      
+// =======================================
+// DIGITAL TATSAT CRM V4 - CALL DISPOSITION
+// =======================================
+
+let dtSelectedLead = null;
+
+const dtCatalog = {
+  "Google Business Profile (GMB)": [
+    "Google Listing",
+    "GMB Permanently / Temporarily Closed",
+    "GMB Website Integration",
+    "Google Optimisation"
+  ],
+  "Website Development": [
+    "E-Commerce Website",
+    "Informative Website"
+  ],
+  "App Development": [
+    "Android App",
+    "iOS App"
+  ],
+  "Software": [
+    "Lead Management System",
+    "Workflow Management System",
+    "Inventory Management System"
+  ],
+  "Web App": [
+    "Web App Development"
+  ],
+  "Social Media Management & Marketing": [
+    "Social Media Management",
+    "Social Media Marketing"
+  ],
+  "Others": [
+    "Other / Custom Requirement"
+  ]
+};
+
+const dtConnectedReasons = [
+  "Interested",
+  "Not Interested",
+  "Partially Interested",
+  "Follow-up Required",
+  "Call Back Requested",
+  "Payment Pending",
+  "Converted",
+  "Not Qualified"
+];
+
+const dtNotConnectedReasons = [
+  "RNR",
+  "Busy",
+  "Switched Off",
+  "Not Reachable",
+  "Wrong Number"
+];
+
+function dtFillSelect(element, values) {
+  element.replaceChildren();
+
+  for (const value of values) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    element.appendChild(option);
+  }
+}
+
+function dtGetCallStatus() {
+  return document.querySelector(
+    'input[name="dtCallStatus"]:checked'
+  ).value;
+}
+
+function dtUpdateStatus() {
+  const connected = dtGetCallStatus() === "Connected";
+
+  document.getElementById("dtProductFields")
+    .style.display = connected ? "block" : "none";
+
+  document.getElementById("dtDispositionLabel")
+    .textContent = connected
+      ? "Call Disposition *"
+      : "Not Connected Reason *";
+
+  dtFillSelect(
+    document.getElementById("dtDisposition"),
+    connected ? dtConnectedReasons : dtNotConnectedReasons
+  );
+}
+
+function dtUpdateProducts() {
+  const category =
+    document.getElementById("dtCategory").value;
+
+  dtFillSelect(
+    document.getElementById("dtProduct"),
+    dtCatalog[category] || []
+  );
+
+  document.getElementById("dtCustomField")
+    .style.display = category === "Others"
+      ? "block"
+      : "none";
+}
+
+function dtBuildTimeSlots() {
+  const timeSelect =
+    document.getElementById("dtFollowTime");
+
+  for (let hour = 10; hour <= 18; hour++) {
+    for (let minute of [0, 30]) {
+      if (hour === 18 && minute === 30) continue;
+
+      const value =
+        String(hour).padStart(2, "0") + ":" +
+        String(minute).padStart(2, "0");
+
+      const displayHour = hour % 12 || 12;
+      const period = hour >= 12 ? "PM" : "AM";
+
+      const label =
+        displayHour + ":" +
+        String(minute).padStart(2, "0") +
+        " " + period;
+
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      timeSelect.appendChild(option);
+    }
+  }
+}
+
+function openCallDisposition(lead) {
+  dtSelectedLead = lead;
+
+  document.getElementById("dtCallForm").reset();
+
+  document.getElementById("dtCustomerName")
+    .textContent =
+      "Lead #" + lead.id + " — " +
+      (lead.name || "Customer");
+
+  document.getElementById("dtSaveMessage")
+    .textContent = "";
+
+  dtUpdateStatus();
+  dtUpdateProducts();
+
+  document.getElementById("dtCallModal")
+    .classList.add("open");
+}
+
+function dtCloseDisposition() {
+  document.getElementById("dtCallModal")
+    .classList.remove("open");
+}
+
+dtFillSelect(
+  document.getElementById("dtCategory"),
+  Object.keys(dtCatalog)
+);
+
+dtUpdateProducts();
+dtUpdateStatus();
+dtBuildTimeSlots();
+
+document.querySelectorAll(
+  'input[name="dtCallStatus"]'
+).forEach(input => {
+  input.addEventListener("change", dtUpdateStatus);
+});
+
+document.getElementById("dtCategory")
+  .addEventListener("change", dtUpdateProducts);
+
+document.getElementById("dtCloseModal")
+  .addEventListener("click", dtCloseDisposition);
+
+document.getElementById("dtCallForm")
+  .addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    if (!dtSelectedLead) return;
+
+    const button =
+      document.getElementById("dtSaveButton");
+
+    const feedback =
+      document.getElementById("dtSaveMessage");
+
+    const callStatus = dtGetCallStatus();
+
+    const category =
+      document.getElementById("dtCategory").value;
+
+    let product =
+      document.getElementById("dtProduct").value;
+
+    if (callStatus === "Connected" && category === "Others") {
+      product = document.getElementById("dtCustomProduct")
+        .value.trim();
+
+      if (!product) {
+        feedback.textContent =
+          "Please enter the custom requirement.";
+        return;
+      }
+    }
+
+    const followDate =
+      document.getElementById("dtFollowDate").value;
+
+    const followTime =
+      document.getElementById("dtFollowTime").value;
+
+    if (Boolean(followDate) !== Boolean(followTime)) {
+      feedback.textContent =
+        "Please select both follow-up date and time.";
+      return;
+    }
+
+    const payload = {
+      lead_id: dtSelectedLead.id,
+      call_status: callStatus,
+      disposition:
+        document.getElementById("dtDisposition").value,
+      service_category:
+        callStatus === "Connected" ? category : null,
+      service_product:
+        callStatus === "Connected" ? product : null,
+      remarks:
+        document.getElementById("dtRemarks").value,
+      next_follow_up: followDate || null,
+      follow_up_time: followTime || null
+    };
+
+    button.disabled = true;
+    feedback.textContent = "Saving call log...";
+
+    try {
+      const response = await fetch(
+        "/api/employee/call-logs",
+        {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.error || "Unable to save call log."
+        );
+      }
+
+      feedback.textContent =
+        "Call log saved successfully!";
+
+      setTimeout(() => {
+        dtCloseDisposition();
+      }, 1000);
+
+    } catch (error) {
+      feedback.textContent =
+        "Error: " + error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+
 async function loadAssignedLeads() {
   const message = document.getElementById("assignedLeadsMessage");
   const rows = document.getElementById("assignedLeadsRows");
@@ -384,7 +778,11 @@ async function loadAssignedLeads() {
         const callLink = document.createElement("a");
         callLink.textContent = "Call Now";
         callLink.href = "tel:" + lead.phone.replace(/[^\d+]/g, "");
-        callLink.style.color = "#2563eb";
+        callLink.addEventListener("click", () => {
+  openCallDisposition(lead);
+});
+
+       callLink.style.color = "#2563eb";
         callLink.style.fontWeight = "bold";
         actionCell.appendChild(callLink);
       } else {
@@ -722,6 +1120,118 @@ loadAssignedLeads();
       refresh();
     })();
   </script>
+
+<!-- DIGITAL TATSAT CALL DISPOSITION POPUP -->
+
+<div id="dtCallModal"
+     class="dt-modal"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="dtModalTitle">
+
+  <div class="dt-modal-box">
+
+    <div class="dt-modal-header">
+      <h3 id="dtModalTitle">Call Disposition</h3>
+      <button type="button"
+              class="dt-close"
+              id="dtCloseModal">×</button>
+    </div>
+
+    <div class="dt-modal-body">
+
+      <p id="dtCustomerName"></p>
+
+      <form id="dtCallForm">
+
+        <div class="dt-field">
+          <label>Call Status *</label>
+
+          <div class="dt-status-options">
+            <label>
+              <input type="radio"
+                     name="dtCallStatus"
+                     value="Connected"
+                     checked>
+              Connected
+            </label>
+
+            <label>
+              <input type="radio"
+                     name="dtCallStatus"
+                     value="Not Connected">
+              Not Connected
+            </label>
+          </div>
+        </div>
+
+        <div class="dt-field">
+          <label id="dtDispositionLabel">
+            Call Disposition *
+          </label>
+          <select id="dtDisposition" required></select>
+        </div>
+
+        <div id="dtProductFields">
+
+          <div class="dt-field">
+            <label>Service Category *</label>
+            <select id="dtCategory"></select>
+          </div>
+
+          <div class="dt-field">
+            <label>Product / Service *</label>
+            <select id="dtProduct"></select>
+          </div>
+
+          <div class="dt-field"
+               id="dtCustomField"
+               style="display:none">
+            <label>Custom Requirement *</label>
+            <input id="dtCustomProduct"
+                   placeholder="Enter service requirement">
+          </div>
+
+        </div>
+
+        <div class="dt-field">
+          <label>Call Remarks</label>
+          <textarea id="dtRemarks"
+                    maxlength="2000"
+                    placeholder="Customer feedback, budget, objections..."></textarea>
+        </div>
+
+        <div class="dt-grid">
+
+          <div class="dt-field">
+            <label>Follow-up Date</label>
+            <input type="date" id="dtFollowDate">
+          </div>
+
+          <div class="dt-field">
+            <label>Follow-up Time (IST)</label>
+            <select id="dtFollowTime">
+              <option value="">Select Time</option>
+            </select>
+          </div>
+
+        </div>
+
+        <p id="dtSaveMessage"
+           class="dt-feedback"
+           role="status"></p>
+
+        <button type="submit"
+                class="dt-save"
+                id="dtSaveButton">
+          Save Call Log
+        </button>
+
+      </form>
+
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
