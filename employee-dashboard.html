@@ -290,20 +290,33 @@
       </div>
     </section>
 
-    <section class="panel">
-      <h3>SIM-Based Calling</h3>
+    
+<h3>SIM-Based Calling — Assigned Leads</h3>
 
-      <p>
-        Your assigned leads, Call Now button,
-        call disposition, call descriptions,
-        and follow-up management will be
-        available in the next development phase.
-      </p>
+<p id="assignedLeadsMessage">
+  Loading assigned leads...
+</p>
 
-      <div class="notice">
-        Calls and dispositions are not yet
-        connected to the CRM database.
-      </div>
+<div style="overflow-x:auto;">
+  <table style="width:100%;border-collapse:collapse;">
+    <thead>
+      <tr>
+        <th>Lead ID</th>
+        <th>Customer Name</th>
+        <th>Phone Number</th>
+        <th>Status</th>
+        <th>Next Follow-up</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="assignedLeadsRows"></tbody>
+  </table>
+</div>
+
+<button type="button" id="refreshAssignedLeads">
+  Refresh Assigned Leads
+</button>
+
     </section>
 
     <section class="panel">
