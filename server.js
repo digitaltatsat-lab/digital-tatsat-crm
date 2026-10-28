@@ -1880,7 +1880,49 @@ app.get(
     }
   }
 );
+ // =====================================
+ // EMPLOYEE ASSIGNED LEADS API
+ // =====================================
 
+app.get(
+  "/api/employee/assigned-leads",
+  verifyEmployee,
+  async (req, res) => {
+    res.set("Cache-Control", "no-store");
+
+    try {
+      const employeeId = req.crmUser.id;
+
+      const { data, error } = await req.supabase
+        .from(LEADS_TABLE)
+        .select(
+          "id,name,company,phone,status,next_follow_up,assigned_employee_id"
+        )
+        .eq("assigned_employee_id", employeeId)
+        .order("id", { ascending: false })
+        .limit(500);
+
+      if (error) throw error;
+
+      return res.json({
+        success: true,
+        count: data.length,
+        leads: data
+      });
+
+    } catch (error) {
+      console.error(
+        "Employee assigned leads:",
+        error.message
+      );
+
+      return res.status(500).json({
+        success: false,
+        error: "Unable to load assigned leads."
+      });
+    }
+  }
+);
 // =====================================
 // START SERVER
 // =====================================
