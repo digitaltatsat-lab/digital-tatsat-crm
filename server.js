@@ -25,7 +25,7 @@ const STATUSES = [
 ];
 
 const LEAD_FIELDS = [
-  
+"assigned_employee_id", 
 
   "id", "name", "phone", "email", "status",
   "lead_source", "form_name", "company",
