@@ -1448,6 +1448,46 @@ app.post("/logout", (req, res) => {
   res.redirect("/login");
 });
 
+/* =====================================
+   ADMIN - ASSIGNABLE EMPLOYEES
+   ===================================== */
+
+app.get(
+  "/api/admin/assignable-employees",
+  verifyAdmin,
+  async (req, res) => {
+    res.set("Cache-Control", "no-store");
+
+    try {
+      const { data, error } = await req.supabase
+        .from("crm_employee_profiles")
+        .select(
+          "id,employee_code,full_name,department"
+        )
+        .eq("is_active", true)
+        .order("employee_code");
+
+      if (error) throw error;
+
+      return res.json({
+        success: true,
+        employees: data || []
+      });
+
+    } catch (error) {
+      console.error(
+        "Employee directory:",
+        error.message
+      );
+
+      return res.status(500).json({
+        success: false,
+        error: "Unable to load employees."
+      });
+    }
+  }
+);
+
 // =====================================
 // GET ALL LEADS - ADMIN ONLY
 // =====================================
